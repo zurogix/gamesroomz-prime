@@ -52,5 +52,6 @@ export type AssessmentState = {
   responses: Record<string, QuestionResponse>;
   plan: Workstream[];
   status: "draft" | "assessment-complete" | "planning" | "submitted" | "changes-requested" | "approved";
+  checks: boolean[];
   lastSavedAt?: string;
 };
