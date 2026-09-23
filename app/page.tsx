@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { initialAssessment, calculateComplexity, totalPlanDays, assessmentCoverage, planCoverage, deriveFindings, syncPlanFromAssessment } from "@/lib/assessment";
-import { planTemplate, questions } from "@/lib/questions";
+import { questions } from "@/lib/questions";
 import { AssessmentState, Classification, Workstream } from "@/lib/types";
 
 const STORAGE_KEY = "gamesroomz-prime-assessment-v1";
@@ -149,7 +149,7 @@ export default function HomePage() {
         <header className="topbar">
           <div>
             <span className="eyebrow">Techninier · Prime Game Conversion</span>
-            <h1>{active}</h1>
+            <h1>{active}</h1>\n            <div className="workspace-meta"><span>{state.gameInfo.gameName || "Untitled game"}</span><i /> <span>Draft autosaved locally</span></div>
           </div>
           <div className="top-actions">
             <Pill tone={complexity.level}>{complexity.label}</Pill>
@@ -178,6 +178,25 @@ export default function HomePage() {
                 <div><strong>2</strong><span>Classify</span><small>Reuse, modify, rewrite or new?</small></div>
                 <div><strong>3</strong><span>Plan</span><small>How will Prime support be implemented?</small></div>
                 <div><strong>4</strong><span>Estimate</span><small>How many person-days and what risks?</small></div>
+              </div>
+            </section>
+
+            <section className="dashboard-metrics span-2">
+              <div className="metric-card">
+                <div className="metric-icon metric-icon-purple">A</div>
+                <div><span>Assessment</span><strong>{assessPct}%</strong><small>Technical coverage</small></div>
+              </div>
+              <div className="metric-card">
+                <div className="metric-icon metric-icon-blue">P</div>
+                <div><span>Conversion plan</span><strong>{planPct}%</strong><small>Planning coverage</small></div>
+              </div>
+              <div className="metric-card">
+                <div className="metric-icon metric-icon-green">D</div>
+                <div><span>Planned effort</span><strong>{totalDays}</strong><small>Person-days</small></div>
+              </div>
+              <div className="metric-card">
+                <div className="metric-icon metric-icon-orange">R</div>
+                <div><span>High-risk areas</span><strong>{state.plan.filter(w=>w.risk==="high").length}</strong><small>Need attention</small></div>
               </div>
             </section>
 
