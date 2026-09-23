@@ -1,6 +1,6 @@
 import { forwardRef } from "react";
-import { ANSWERS, CLASS_HELP, CLASS_LABEL } from "@/lib/sections";
-import { Answer, Question, QuestionResponse } from "@/lib/types";
+import { ANSWERS, CLASS_HELP } from "@/lib/sections";
+import { Question, QuestionResponse } from "@/lib/types";
 import ImpactButtons from "./ImpactButtons";
 
 type Props = {
@@ -11,73 +11,83 @@ type Props = {
   onFocus: () => void;
   onChange: (patch: Partial<QuestionResponse>) => void;
 };
-
 const QuestionRow = forwardRef<HTMLElement, Props>(function QuestionRow(
   { question, number, response, focused, onFocus, onChange },
-  ref
+  ref,
 ) {
   const { id } = question;
-  const heavy = response.classification === "rewrite" || response.classification === "new";
-  const missingReason = heavy && !response.explanation.trim();
-  const toggleAnswer = (value: Answer) => onChange({ answer: response.answer === value ? "" : value });
-
+  const missingReason = Boolean(
+    response.classification && !response.explanation.trim(),
+  );
   return (
-    <article ref={ref} className={`q ${focused ? "focus" : ""}`} onClick={onFocus} onFocus={onFocus}>
-      <div className="q-main">
-        <div className="q-text">
-          <span className="q-num">{number}.</span>
-          <div>
-            <p>{question.prompt}</p>
-            {question.helper && <small>{question.helper}</small>}
-            {missingReason && response.classification && (
-              <span className="q-warn">⚠ {CLASS_LABEL[response.classification]} needs an explanation</span>
-            )}
-          </div>
-        </div>
-
-        <div className="ctl ctl-answer">
-          <span className="ctl-title" id={`al-${id}`}>Answer</span>
-          <div className="seg" role="group" aria-labelledby={`al-${id}`}>
-            {ANSWERS.map((a) => (
-              <button key={a.value} type="button" className={response.answer === a.value ? "on" : ""} aria-pressed={response.answer === a.value} onClick={() => toggleAnswer(a.value)}>
-                {a.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="ctl">
-          <span className="ctl-title" id={`il-${id}`}>Impact</span>
-          <ImpactButtons value={response.classification} labelledBy={`il-${id}`} onChange={(classification) => onChange({ classification })} />
-        </div>
-
-        <div className="ctl ctl-days">
-          <label className="ctl-title" htmlFor={`d-${id}`}>Person-days</label>
-          <input
-            type="number"
-            id={`d-${id}`}
-            min="0"
-            step="0.5"
-            placeholder="0"
-            value={response.effortDays || ""}
-            onChange={(e) => onChange({ effortDays: Number(e.target.value) || 0 })}
-          />
+    <article
+      ref={ref}
+      className={`q ${focused ? "focus" : ""}`}
+      onClick={onFocus}
+      onFocus={onFocus}
+    >
+      <div className="q-text">
+        <span className="q-num">{number}.</span>
+        <div>
+          <p>{question.prompt}</p>
+          <small>{question.helper}</small>
         </div>
       </div>
-
+      <div className="question-outcomes">
+        <div className="ctl">
+          <span className="ctl-title" id={`il-${id}`}>
+            Required action
+          </span>
+          <ImpactButtons
+            value={response.classification}
+            labelledBy={`il-${id}`}
+            onChange={(classification) =>
+              onChange({ classification, answer: classification ? "yes" : "" })
+            }
+          />
+        </div>
+        <div className="seg" role="group" aria-label="Unresolved requirement">
+          {ANSWERS.map((a) => (
+            <button
+              key={a.value}
+              type="button"
+              className={response.answer === a.value ? "on" : ""}
+              aria-pressed={response.answer === a.value}
+              onClick={() =>
+                onChange({
+                  classification: "",
+                  answer: response.answer === a.value ? "" : a.value,
+                })
+              }
+            >
+              {a.label}
+            </button>
+          ))}
+        </div>
+      </div>
       <div className="q-detail field">
-        <label htmlFor={`ex-${id}`}>Explanation</label>
+        <label htmlFor={`ex-${id}`}>
+          {response.answer === "unsure" || response.answer === "awaiting"
+            ? "What is unknown, and how will it be resolved?"
+            : "Finding / evidence"}
+        </label>
         <textarea
           id={`ex-${id}`}
           className={missingReason ? "warn" : ""}
-          placeholder="How does the existing implementation work, and why does it need to change — or not?"
+          placeholder="Briefly name the component, what stays or changes, and the code check / test supporting this. For Not applicable, explain why."
           value={response.explanation}
           onChange={(e) => onChange({ explanation: e.target.value })}
         />
-        {response.classification && <span className="hint">{CLASS_HELP[response.classification]}</span>}
+        {missingReason && (
+          <span className="q-warn">
+            Add a brief finding to complete this item.
+          </span>
+        )}
+        {response.classification && (
+          <span className="hint">{CLASS_HELP[response.classification]}</span>
+        )}
       </div>
     </article>
   );
 });
-
 export default QuestionRow;

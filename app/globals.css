@@ -349,3 +349,37 @@ td.n{font:500 13px var(--mono);text-align:right}
   .top{position:static;margin:0 0 12px;padding:0;border:0;background:none;backdrop-filter:none}
   .card,.report-head,.kpi,.section-card{break-inside:avoid;box-shadow:none}
 }
+
+
+/* Evidence-led assessment */
+:root { --na: var(--muted); --na-bg: var(--surface); }
+.question-outcomes { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px; margin: 18px 0 8px; }
+.question-outcomes .impact, .question-outcomes .seg { flex-wrap: wrap; }
+.impact .na.on { background: var(--line); color: var(--ink); }
+.review-check { display: flex; gap: 10px; align-items: flex-start; margin: 20px 0; line-height: 1.6; }
+.review-check input { margin-top: 6px; }
+.linked-findings { margin: 16px 0; border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
+.linked-findings summary { cursor: pointer; font-weight: 600; }
+.linked-findings div { padding: 12px 0; border-top: 1px solid var(--line); margin-top: 12px; white-space: pre-wrap; }
+.report-link { color: var(--focus); background: transparent; border: 0; padding: 0; text-align: left; cursor: pointer; font: inherit; font-weight: 600; }
+.change-report { min-width: 820px; }
+.change-report td { vertical-align: top; white-space: pre-wrap; overflow-wrap: anywhere; }
+.change-report td:nth-child(1) { width: 22%; }
+.change-report td:nth-child(2) { width: 38%; }
+.change-report td:nth-child(3) { width: 30%; }
+.change-report p { margin: 8px 0; }
+.change-report small { display: block; }
+.timeline button:disabled { opacity: .45; cursor: not-allowed; }
+.save-error { padding: 12px; background: #8c301d; color: white; }
+@media print {
+  .change-report { min-width: 0; table-layout: fixed; font-size: 9px; }
+  .change-report th, .change-report td { padding: 6px; }
+  .table-wrap { overflow: visible; }
+  .change-report tr { break-inside: avoid; }
+  .report-link { color: inherit; }
+}
+
+.q > .q-text { padding: 18px 18px 0; }
+.question-outcomes { margin-left: 18px; margin-right: 18px; }
+
+@media print { .report-changes { break-inside: auto; } }

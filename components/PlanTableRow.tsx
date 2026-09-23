@@ -4,9 +4,9 @@ import { Workstream } from "@/lib/types";
 import ClassificationChip from "./ClassificationChip";
 import RiskLabel from "./RiskLabel";
 
-type Props = { workstream: Workstream; onOpen: (id: string) => void };
+type Props = { workstream: Workstream; issues: string[]; onOpen: (id: string) => void };
 
-export default function PlanTableRow({ workstream: w, onOpen }: Props) {
+export default function PlanTableRow({ workstream: w, issues, onOpen }: Props) {
   const done = planFieldsDone(w);
   return (
     <tr
@@ -18,7 +18,7 @@ export default function PlanTableRow({ workstream: w, onOpen }: Props) {
     >
       <td className="ws">
         <b>{w.title}</b>
-        <small>{w.deliverable}</small>
+        <small>{w.deliverable}</small>{issues.length > 0 && <small className="q-warn">{issues.join(" · ")}</small>}
       </td>
       <td><ClassificationChip value={w.classification} /></td>
       <td><RiskLabel risk={w.risk} /></td>
@@ -33,3 +33,4 @@ export default function PlanTableRow({ workstream: w, onOpen }: Props) {
     </tr>
   );
 }
+

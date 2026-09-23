@@ -58,22 +58,26 @@ export default function AssessmentSection({ state, section, savedAt, focusId, on
       if (key === "k") return move(-1);
       const answer = ANSWERS[Number(key) - 1];
       const current = state.responses[q.id];
-      if (answer) return onChange(q.id, { answer: current.answer === answer.value ? "" : answer.value });
+      if (answer) return onChange(q.id, { classification: "", answer: current.answer === answer.value ? "" : answer.value });
       const impact = IMPACT_KEYS[key];
-      if (impact) onChange(q.id, { classification: current.classification === impact ? "" : impact });
+      if (impact) {
+        const classification = current.classification === impact ? "" : impact;
+        onChange(q.id, { classification, answer: classification ? "yes" : "" });
+      }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [focus, sectionQs, state.responses, onChange]);
 
   const done = sectionQs.filter((q) => isQuestionDone(state, q)).length;
-  const crumb = <>Assessment <span>·</span> Section {index + 1} of {ASSESSMENT_SECTIONS.length} <span>·</span> {done}/{sectionQs.length} answered</>;
+  const crumb = <>Assessment <span>·</span> Section {index + 1} of {ASSESSMENT_SECTIONS.length} <span>·</span> {done}/{sectionQs.length} complete</>;
   const goNext = () => (next === PLAN ? onContinueToPlan() : onNavigate(next));
 
   return (
     <>
       <PageHeader title={section} crumb={crumb} savedAt={savedAt} />
       <div className="content">
+        <p className="hint">Choose one action and add a brief finding. Estimate effort once per workstream in the Conversion Plan. Unresolved items remain incomplete.</p>
         <div className="section-card">
           {sectionQs.map((q, i) => (
             <QuestionRow
@@ -91,7 +95,7 @@ export default function AssessmentSection({ state, section, savedAt, focusId, on
         <div className="pager">
           <div className="shortcuts" aria-hidden="true">
             <span><kbd>J</kbd><kbd>K</kbd> move</span>
-            <span><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> answer</span>
+            <span><kbd>1</kbd><kbd>2</kbd> unresolved</span>
             <span><kbd>R</kbd><kbd>M</kbd><kbd>W</kbd><kbd>N</kbd> impact</span>
           </div>
           <div className="pager-actions">
@@ -103,3 +107,4 @@ export default function AssessmentSection({ state, section, savedAt, focusId, on
     </>
   );
 }
+

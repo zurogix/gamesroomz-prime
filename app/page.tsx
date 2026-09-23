@@ -16,7 +16,7 @@ import { ASSESSMENT_SECTIONS, OVERVIEW, PLAN, SUMMARY } from "@/lib/sections";
 
 export default function HomePage() {
   const {
-    state, savedAt, updateGameInfo, updateResponse, updatePlan, setStatus, toggleCheck, syncPlan, reset,
+    state, loaded, savedAt, saveError, updateGameInfo, updateResponse, updatePlan, setStatus, toggleCheck, syncPlan, reset,
   } = useAssessment();
   const { theme, setTheme } = useTheme();
   const [view, setView] = useState(OVERVIEW);
@@ -107,8 +107,11 @@ export default function HomePage() {
     return <OverviewView state={state} savedAt={savedAt} onGameInfo={updateGameInfo} onNavigate={navigate} />;
   }
 
+  if (!loaded) return <main className="content">Loading saved assessment…</main>;
+
   return (
     <>
+      {saveError && <div role="alert" className="save-error">This draft could not be saved in this browser. Keep this page open and use Print report to retain your work.</div>}
       <div className={`shell ${showRail ? "" : "no-rail"}`}>
         <Sidebar
           state={state}
@@ -123,9 +126,10 @@ export default function HomePage() {
         {showRail && <SummaryRail state={state} onJumpToQuestion={jumpToQuestion} onOpenWorkstream={openWorkstream} />}
       </div>
       {drawerId && (
-        <PlanDrawer plan={state.plan} openId={drawerId} onChange={updatePlan} onSelect={setDrawerId} onClose={closeDrawer} />
+        <PlanDrawer plan={state.plan} responses={state.responses} openId={drawerId} onChange={updatePlan} onSelect={setDrawerId} onClose={closeDrawer} />
       )}
       {paletteOpen && <CommandPalette plan={state.plan} onPick={pick} onClose={() => setPaletteOpen(false)} />}
     </>
   );
 }
+

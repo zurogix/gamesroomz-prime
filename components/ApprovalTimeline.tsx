@@ -3,10 +3,11 @@ import { AssessmentState } from "@/lib/types";
 
 type Props = {
   status: AssessmentState["status"];
+  canChange: (status: AssessmentState["status"]) => boolean;
   onChange: (status: AssessmentState["status"]) => void;
 };
 
-export default function ApprovalTimeline({ status, onChange }: Props) {
+export default function ApprovalTimeline({ status, onChange, canChange }: Props) {
   const current = STATUS_STEPS.findIndex((s) => s.value === status);
   return (
     <div className="timeline" role="group" aria-label="Approval status">
@@ -17,7 +18,7 @@ export default function ApprovalTimeline({ status, onChange }: Props) {
           i === current && step.value === "changes-requested" ? "alert" : "",
         ].join(" ");
         return (
-          <button key={step.value} type="button" className={classes} aria-pressed={i === current} onClick={() => onChange(step.value)}>
+          <button key={step.value} type="button" disabled={!canChange(step.value)} className={classes} aria-pressed={i === current} onClick={() => onChange(step.value)}>
             <span className="dot"><i /></span>
             {step.label}
           </button>
@@ -26,3 +27,4 @@ export default function ApprovalTimeline({ status, onChange }: Props) {
     </div>
   );
 }
+

@@ -17,26 +17,27 @@ export const ASSESSMENT_SECTIONS = [
   "Prime Hardware & QA",
 ];
 
-export const CLASSES: ImpactClass[] = ["reuse", "modify", "rewrite", "new"];
+export const CLASSES: ImpactClass[] = ["reuse", "modify", "rewrite", "new", "na"];
 
 export const CLASS_LABEL: Record<ImpactClass, string> = {
   reuse: "Reuse",
   modify: "Modify",
   rewrite: "Rewrite",
   new: "New",
+  na: "Not applicable",
 };
 
 export const CLASS_HELP: Record<ImpactClass, string> = {
   reuse: "Existing implementation can remain substantially unchanged.",
   modify: "Existing implementation is usable but requires changes.",
-  rewrite: "Existing implementation is unsuitable and needs substantial redevelopment.",
-  new: "This capability does not currently exist and must be newly developed.",
+  rewrite: "An identified existing component must be replaced. Name it and explain why modification is insufficient; this is not a whole-game verdict.",
+  new: "This required capability does not exist and must be added. Existing gameplay may still be reused.",
+  na: "This requirement is outside the agreed Prime scope. Explain why.",
 };
 
 export const ANSWERS = [
-  { value: "yes", label: "Yes" },
-  { value: "no", label: "No" },
-  { value: "unsure", label: "Not sure" },
+  { value: "unsure", label: "Needs investigation" },
+  { value: "awaiting", label: "Awaiting specification" },
 ] as const;
 
 export const STATUS_STEPS: { value: AssessmentState["status"]; label: string }[] = [
@@ -50,19 +51,20 @@ export const STATUS_STEPS: { value: AssessmentState["status"]; label: string }[]
 
 export const CONFIRMATIONS = [
   "The assessment accurately describes the existing game architecture.",
-  "All items classified as Rewrite/New include a technical reason and implementation approach.",
+  "Every required change has a specific reason, implementation approach and acceptance outcome.",
   "Optional enhancements are separated from mandatory Prime conversion work.",
-  "Person-day estimates include implementation and developer testing assumptions.",
+  "Effort is counted once per workstream; implementation, testing and dependencies are documented.",
 ];
 
-export const COMPLEXITY_BANDS = ["Minor", "Moderate", "Major", "Rebuild"];
 
 export function riskColor(risk: string) {
   if (risk === "high") return "var(--risk-high)";
   if (risk === "medium") return "var(--risk-med)";
-  return "var(--risk-low)";
+  return risk === "low" ? "var(--risk-low)" : "var(--muted)";
 }
 
-export function formatDays(n: number) {
+export function formatDays(n: number | null) {
+  if (n === null) return "—";
   return (Math.round((Number(n) || 0) * 10) / 10).toString();
 }
+

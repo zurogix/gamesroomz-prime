@@ -6,8 +6,9 @@ export default function RiskLabel({ risk, suffix = "" }: { risk: Risk; suffix?: 
   const style = { "--c": riskColor(risk) } as CSSProperties;
   return (
     <span className="risk" style={style}>
-      {risk}
-      {suffix}
+      {risk || "Not assessed"}
+      {risk && suffix}
     </span>
   );
 }
+

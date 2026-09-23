@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { assessmentCoverage, planFieldsDone, PLAN_FIELD_COUNT } from "@/lib/assessment";
+import { assessmentCoverage, workstreamIssues } from "@/lib/assessment";
 import { ASSESSMENT_SECTIONS, OVERVIEW, PLAN, SUMMARY } from "@/lib/sections";
 import { AssessmentState } from "@/lib/types";
 import { ThemeChoice } from "@/hooks/useTheme";
@@ -23,7 +23,7 @@ export default function Sidebar({ state, active, theme, onNavigate, onOpenPalett
     document.querySelector(".nav-item.on")?.scrollIntoView({ block: "nearest", inline: "nearest" });
   }, [active]);
 
-  const plansDone = state.plan.filter((w) => planFieldsDone(w) === PLAN_FIELD_COUNT).length;
+  const plansDone = state.plan.filter((w) => workstreamIssues(state, w).length === 0).length;
   const checksDone = state.checks.filter(Boolean).length;
   const navItem = (view: string, ring?: [number, number]) => (
     <button type="button" className={`nav-item ${active === view ? "on" : ""}`} aria-current={active === view ? "page" : undefined} onClick={() => onNavigate(view)}>
@@ -68,3 +68,4 @@ export default function Sidebar({ state, active, theme, onNavigate, onOpenPalett
     </aside>
   );
 }
+

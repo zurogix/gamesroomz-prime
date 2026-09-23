@@ -1,6 +1,6 @@
-export type Answer = "yes" | "no" | "unsure" | "";
-export type Classification = "reuse" | "modify" | "rewrite" | "new" | "";
-export type Risk = "low" | "medium" | "high";
+export type Answer = "yes" | "no" | "unsure" | "awaiting" | "";
+export type Classification = "reuse" | "modify" | "rewrite" | "new" | "na" | "";
+export type Risk = "low" | "medium" | "high" | "";
 export type ScopeType = "mandatory" | "enhancement";
 
 export type Question = {
@@ -8,7 +8,6 @@ export type Question = {
   section: string;
   prompt: string;
   helper?: string;
-  weight: number;
   workstream: string;
 };
 
@@ -16,7 +15,6 @@ export type QuestionResponse = {
   answer: Answer;
   classification: Classification;
   explanation: string;
-  effortDays: number;
 };
 
 export type Workstream = {
@@ -30,7 +28,8 @@ export type Workstream = {
   reusedComponents: string;
   changedComponents: string;
   deliverable: string;
-  personDays: number;
+  personDays: number | null;
+  reviewed: boolean;
   dependencies: string;
   risk: Risk;
   scopeType: ScopeType;
@@ -45,9 +44,16 @@ export type GameInfo = {
   currentMultiplayer: string;
   targetPlayers: string;
   assessmentDate: string;
+  targetHardware: string;
+  targetUnity: string;
+  targetLayout: string;
+  platformContract: string;
+  performanceTarget: string;
 };
 
 export type AssessmentState = {
+  schemaVersion: 2;
+  legacyDraft?: unknown;
   gameInfo: GameInfo;
   responses: Record<string, QuestionResponse>;
   plan: Workstream[];
@@ -55,3 +61,4 @@ export type AssessmentState = {
   checks: boolean[];
   lastSavedAt?: string;
 };
+

@@ -3,15 +3,18 @@
 import { useEffect, useState } from "react";
 import { planFieldsDone, PLAN_FIELD_COUNT } from "@/lib/assessment";
 import { formatDays } from "@/lib/sections";
-import { Workstream } from "@/lib/types";
+import { AssessmentState, Workstream } from "@/lib/types";
 import ClassificationChip from "./ClassificationChip";
 import PlanDrawerFields from "./PlanDrawerFields";
 import RiskLabel from "./RiskLabel";
+import { questions } from "@/lib/questions";
+import { CLASS_LABEL } from "@/lib/sections";
 
-export type DrawerTab = "overview" | "impl" | "comp" | "effort";
+export type DrawerTab = "plan" | "detail";
 
 type Props = {
   plan: Workstream[];
+  responses: AssessmentState["responses"];
   openId: string;
   onChange: (id: string, patch: Partial<Workstream>) => void;
   onSelect: (id: string) => void;
@@ -19,14 +22,12 @@ type Props = {
 };
 
 const TABS: { key: DrawerTab; label: string }[] = [
-  { key: "overview", label: "Current vs Prime" },
-  { key: "impl", label: "Implementation" },
-  { key: "comp", label: "Components" },
-  { key: "effort", label: "Effort & risk" },
+  { key: "plan", label: "Plan & estimate" },
+  { key: "detail", label: "Supporting detail" },
 ];
 
-export default function PlanDrawer({ plan, openId, onChange, onSelect, onClose }: Props) {
-  const [tab, setTab] = useState<DrawerTab>("overview");
+export default function PlanDrawer({ plan, responses, openId, onChange, onSelect, onClose }: Props) {
+  const [tab, setTab] = useState<DrawerTab>("plan");
   const index = plan.findIndex((w) => w.id === openId);
   const w = plan[index];
 
@@ -65,6 +66,13 @@ export default function PlanDrawer({ plan, openId, onChange, onSelect, onClose }
           ))}
         </div>
         <div className="drawer-body">
+          <p className="hint">{w.primeRequirement}</p>
+          <details className="linked-findings"><summary>Linked assessment findings</summary>
+            {questions.filter(q => q.workstream === w.id).map(q => {
+              const r = responses[q.id];
+              return <div key={q.id}><b>{q.prompt}</b><p>{r?.classification ? CLASS_LABEL[r.classification] : r?.answer === "awaiting" ? "Awaiting specification" : r?.answer === "unsure" ? "Needs investigation" : "Not assessed"}</p><p>{r?.explanation || "Evidence not documented"}</p></div>;
+            })}
+          </details>
           <PlanDrawerFields workstream={w} tab={tab} onChange={(patch) => onChange(w.id, patch)} />
         </div>
         <div className="drawer-foot">
@@ -75,3 +83,4 @@ export default function PlanDrawer({ plan, openId, onChange, onSelect, onClose }
     </>
   );
 }
+

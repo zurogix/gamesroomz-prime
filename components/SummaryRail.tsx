@@ -1,104 +1,119 @@
-import { CSSProperties } from "react";
 import {
   assessmentCoverage,
+  assessmentSummary,
   attentionItems,
-  calculateComplexity,
-  classificationCounts,
   planCoverage,
   totalPlanDays,
+  targetGaps,
+  hasEstimate,
 } from "@/lib/assessment";
-import { questions } from "@/lib/questions";
-import { CLASSES, CLASS_LABEL, COMPLEXITY_BANDS, formatDays } from "@/lib/sections";
+import { formatDays } from "@/lib/sections";
 import { AssessmentState } from "@/lib/types";
-
 type Props = {
   state: AssessmentState;
   onJumpToQuestion: (id: string) => void;
   onOpenWorkstream: (id: string) => void;
 };
-
-const PREVIEW_LENGTH = 64;
-const tone = (c: string) => ({ "--c": c }) as CSSProperties;
-
-function preview(text: string) {
-  return text.length > PREVIEW_LENGTH ? text.slice(0, PREVIEW_LENGTH) + "…" : text;
-}
-
-export default function SummaryRail({ state, onJumpToQuestion, onOpenWorkstream }: Props) {
-  const complexity = calculateComplexity(state);
-  const counts = classificationCounts(state);
+export default function SummaryRail({
+  state,
+  onJumpToQuestion,
+  onOpenWorkstream,
+}: Props) {
+  const summary = assessmentSummary(state);
   const attention = attentionItems(state);
-  const highRisk = state.plan.filter((w) => w.risk === "high");
-  const assessPct = assessmentCoverage(state);
-  const planPct = planCoverage(state);
-  const total = questions.length;
-
+  const estimated = state.plan.filter(hasEstimate).length;
   return (
     <aside className="rail" aria-label="Live summary">
       <section>
-        <span className="label">Conversion scope</span>
-        <div className="rail-verdict">{complexity.label}</div>
-        <div className="gauge">
-          {COMPLEXITY_BANDS.map((b, i) => <div key={b} className={i <= complexity.index ? "on" : ""} />)}
+        <span className="label">Assessment status</span>
+        <div className="rail-verdict">{summary.label}</div>
+        <p className="hint">
+          Required changes and effort are reviewed by workstream. No automatic
+          “redo” verdict.
+        </p>
+      </section>
+      <section>
+        <span className="label">
+          {summary.ready ? "Estimated effort" : "Entered effort · partial"}
+        </span>
+        <div className="big num">
+          {estimated ? formatDays(totalPlanDays(state)) : "—"}
+          <small>person-days</small>
         </div>
-        <div className="gauge-labels">
-          {COMPLEXITY_BANDS.map((b, i) => <span key={b} className={i === complexity.index ? "on" : ""}>{b}</span>)}
+        <p className="hint">
+          {estimated}/{state.plan.length} workstreams estimated. Mandatory and
+          optional totals are separate in the report.
+        </p>
+        <div className="progress-line">
+          <span>Assessment</span>
+          <span>{assessmentCoverage(state)}%</span>
+        </div>
+        <div className="bar">
+          <i style={{ width: `${assessmentCoverage(state)}%` }} />
+        </div>
+        <div className="progress-line">
+          <span>Plan reviewed</span>
+          <span>{planCoverage(state)}%</span>
+        </div>
+        <div className="bar">
+          <i style={{ width: `${planCoverage(state)}%` }} />
         </div>
       </section>
-
+      {targetGaps(state).length > 0 && (
+        <section>
+          <span className="label">Target requirements to confirm</span>
+          <ul>
+            {targetGaps(state).map((g) => (
+              <li key={g}>{g}</li>
+            ))}
+          </ul>
+          <span className="hint">Record these in Overview.</span>
+        </section>
+      )}
       <section>
-        <span className="label">Planned effort</span>
-        <div className="big num">{formatDays(totalPlanDays(state))}<small>person-days</small></div>
-        <div className="progress-line"><span>Assessment</span><span className="num">{assessPct}%</span></div>
-        <div className="bar"><i style={{ width: `${assessPct}%` }} /></div>
-        <div className="progress-line"><span>Plan</span><span className="num">{planPct}%</span></div>
-        <div className="bar"><i style={{ width: `${planPct}%` }} /></div>
-      </section>
-
-      <section>
-        <span className="label">Impact across {total} questions</span>
-        <div className="stack">
-          {CLASSES.map((c) => <i key={c} style={{ width: `${(counts[c] / total) * 100}%`, background: `var(--${c})` }} />)}
-        </div>
-        <div className="legend">
-          {CLASSES.map((c) => <span key={c} style={tone(`var(--${c})`)}>{CLASS_LABEL[c]}<b>{counts[c]}</b></span>)}
-          <span style={tone("var(--line-2)")}>Unclassified<b>{counts.none}</b></span>
-        </div>
-      </section>
-
-      <section>
-        <span className="label">Needs attention · {attention.length}</span>
+        <span className="label">Findings to resolve · {attention.length}</span>
         <div className="att">
-          {attention.length === 0 && <span className="hint">Nothing flagged.</span>}
-          {attention.map(({ question, kind, classification }) => (
+          {attention.length === 0 && (
+            <span className="hint">All findings documented.</span>
+          )}
+          {attention.slice(0, 5).map(({ question, kind }) => (
             <button
               key={question.id}
               type="button"
-              style={tone(kind === "reason" ? `var(--${classification})` : "var(--warn)")}
               onClick={() => onJumpToQuestion(question.id)}
             >
-              <i />
               <span>
-                {kind === "reason" && classification ? `${CLASS_LABEL[classification]} without an explanation` : "Answered “Not sure”"}
-                <em>{question.section} — {preview(question.prompt)}</em>
+                {kind === "reason"
+                  ? "Evidence missing"
+                  : kind === "awaiting"
+                    ? "Awaiting specification"
+                    : kind === "unsure"
+                      ? "Needs investigation"
+                      : "Not assessed"}
+                <em>{question.prompt}</em>
               </span>
             </button>
           ))}
         </div>
+        {attention.length > 5 && <p className="hint">{attention.length - 5} more findings to resolve. Use the section progress to continue; the report lists all unresolved items.</p>}
       </section>
-
       <section>
-        <span className="label">High-risk workstreams · {highRisk.length}</span>
+        <span className="label">High-risk workstreams</span>
         <div className="att">
-          {highRisk.map((w) => (
-            <button key={w.id} type="button" style={tone("var(--risk-high)")} onClick={() => onOpenWorkstream(w.id)}>
-              <i />
-              <span>
-                {w.title}
-                <em>{formatDays(w.personDays)} person-days · {w.classification ? CLASS_LABEL[w.classification] : "Unclassified"}</em>
-              </span>
-            </button>
-          ))}
+          {state.plan
+            .filter((w) => w.risk === "high" && w.classification !== "na")
+            .map((w) => (
+              <button
+                type="button"
+                key={w.id}
+                onClick={() => onOpenWorkstream(w.id)}
+              >
+                <span>
+                  {w.title}
+                  <em>{formatDays(w.personDays)} person-days</em>
+                </span>
+              </button>
+            ))}
         </div>
       </section>
     </aside>

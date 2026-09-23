@@ -1,177 +1,306 @@
 import { Question, Workstream } from "./types";
 
 export const questions: Question[] = [
-  { id:"health-open", section:"Project Health", prompt:"Can the existing Unity project be opened successfully today?", weight:1, workstream:"technical-investigation" },
-  { id:"health-build", section:"Project Health", prompt:"Can the current Android version be built successfully?", weight:2, workstream:"android-modernization" },
-  { id:"health-assets", section:"Project Health", prompt:"Are all required source assets, plugins and libraries available?", weight:1, workstream:"technical-investigation" },
-  { id:"health-obsolete", section:"Project Health", prompt:"Are there obsolete or unsupported Unity plugins in the project?", helper:"If yes, identify which plugins and whether they can be removed or must be replaced.", weight:2, workstream:"unity-modernization" },
-
-  { id:"unity-upgrade", section:"Unity & Android", prompt:"Can the project be upgraded to the agreed Prime Unity version without a major gameplay rewrite?", weight:3, workstream:"unity-modernization" },
-  { id:"android-upgrade", section:"Unity & Android", prompt:"Can the Android SDK / Gradle / JDK toolchain be upgraded without replacing major native integrations?", weight:3, workstream:"android-modernization" },
-  { id:"native-plugins", section:"Unity & Android", prompt:"Does the current game use native Android/iOS plugins that affect gameplay or networking?", weight:2, workstream:"android-modernization" },
-  { id:"mobile-services", section:"Unity & Android", prompt:"Can mobile-only services such as ads, mobile IAP or social login be removed for Prime?", weight:1, workstream:"unity-modernization" },
-
-  { id:"gameplay-core", section:"Core Gameplay", prompt:"Can the existing bubble shooting mechanics be reused substantially unchanged?", weight:3, workstream:"core-gameplay" },
-  { id:"gameplay-aim", section:"Core Gameplay", prompt:"Can the existing aiming, shooting, collision and bubble-matching logic be reused?", weight:2, workstream:"core-gameplay" },
-  { id:"gameplay-score", section:"Core Gameplay", prompt:"Can the existing scoring, win/loss and attack rules be reused?", weight:2, workstream:"core-gameplay" },
-  { id:"gameplay-assets", section:"Core Gameplay", prompt:"Can the existing artwork, animations, audio, effects and level content be reused at Prime resolution?", weight:1, workstream:"core-gameplay" },
-
-  { id:"pvp-device", section:"PvP Architecture", prompt:"Does the current PvP architecture assume one local player per physical device?", helper:"The current mobile model is expected to be one local player plus a remote opponent.", weight:4, workstream:"multiplayer-architecture" },
-  { id:"pvp-two-local", section:"PvP Architecture", prompt:"Can two local players currently exist inside one Unity game instance?", weight:5, workstream:"multiplayer-architecture" },
-  { id:"pvp-state", section:"PvP Architecture", prompt:"Can the existing shared game-state / battle rules support both Prime players locally?", weight:4, workstream:"multiplayer-architecture" },
-  { id:"pvp-controller", section:"PvP Architecture", prompt:"Can the current player-controller architecture support P1 and P2 without a major rewrite?", weight:5, workstream:"player-controller" },
-  { id:"pvp-server", section:"PvP Architecture", prompt:"Can same-table Prime gameplay run locally without sending every move through the existing PvP server?", weight:3, workstream:"networking" },
-
-  { id:"touch-multi", section:"Multi-Touch & Input", prompt:"Does the existing game already support simultaneous multi-touch input?", weight:4, workstream:"multi-touch" },
-  { id:"touch-route", section:"Multi-Touch & Input", prompt:"Can touches be reliably assigned to P1 and P2 gameplay zones?", weight:5, workstream:"multi-touch" },
-  { id:"touch-simultaneous", section:"Multi-Touch & Input", prompt:"Can both players aim and shoot at exactly the same time?", weight:4, workstream:"multi-touch" },
-  { id:"touch-large", section:"Multi-Touch & Input", prompt:"Are existing controls suitable for a large tabletop touchscreen without redesign?", weight:2, workstream:"multi-touch" },
-
-  { id:"ui-two-fields", section:"Prime 16:9 UI", prompt:"Can two vertical bubble-shooter playfields fit cleanly inside the Prime 16:9 tabletop layout?", weight:3, workstream:"prime-ui" },
-  { id:"ui-camera", section:"Prime 16:9 UI", prompt:"Can the existing gameplay camera / playfield framing be reused with limited adjustment?", weight:3, workstream:"prime-ui" },
-  { id:"ui-rotate", section:"Prime 16:9 UI", prompt:"Can P2 gameplay and UI be rotated 180° without changing core gameplay logic?", weight:2, workstream:"prime-ui" },
-  { id:"ui-assets", section:"Prime 16:9 UI", prompt:"Are current UI and visual assets suitable for the larger Prime display resolution?", weight:2, workstream:"prime-ui" },
-
-  { id:"gr-account", section:"Gamesroomz Integration", prompt:"Can the existing game login/account layer be replaced by Gamesroomz player identity?", weight:2, workstream:"gamesroomz-integration" },
-  { id:"gr-session", section:"Gamesroomz Integration", prompt:"Can the game receive session ID, P1/P2 identities and seat mapping from the Gamesroomz SDK?", weight:3, workstream:"gamesroomz-integration" },
-  { id:"gr-score", section:"Gamesroomz Integration", prompt:"Can the existing score/result upload be replaced by Gamesroomz result submission?", weight:2, workstream:"score-results" },
-  { id:"gr-lifecycle", section:"Gamesroomz Integration", prompt:"Can the game support standard Prime lifecycle events: launch, ready, start, end and return to launcher?", weight:3, workstream:"launcher-lifecycle" },
-
-  { id:"qa-install", section:"Prime Hardware & QA", prompt:"Has an Android build of the existing game already been installed and run on Prime-class hardware?", weight:2, workstream:"qa" },
-  { id:"qa-performance", section:"Prime Hardware & QA", prompt:"Is current performance expected to meet stable FPS and memory requirements on Prime hardware?", weight:2, workstream:"qa" },
-  { id:"qa-session", section:"Prime Hardware & QA", prompt:"Can one player session end cleanly before the next users begin?", weight:2, workstream:"qa" },
-  { id:"qa-network", section:"Prime Hardware & QA", prompt:"Does the current game handle network interruption without corrupting a match or result?", weight:2, workstream:"qa" },
+  {
+    "id": "v2-baseline",
+    "section": "Project Health",
+    "prompt": "What work is needed to open the source project and produce a baseline build?",
+    "helper": "Record the tested commit, Unity version and build result. List missing assets, plugins or access; a failed build alone is not evidence that gameplay needs rewriting.",
+    "workstream": "technical-investigation"
+  },
+  {
+    "id": "v2-dependencies",
+    "section": "Project Health",
+    "prompt": "What must change in existing packages or plugins?",
+    "helper": "Identify unsupported dependencies, where they are used and whether to keep, remove or replace them. Separate investigation from implementation effort.",
+    "workstream": "unity-modernization"
+  },
+  {
+    "id": "v2-unity",
+    "section": "Unity & Android",
+    "prompt": "What Unity changes are required by the agreed Prime baseline?",
+    "helper": "Compare the current editor and packages with the confirmed target version. Reuse if compatible; do not assume an upgrade or gameplay rewrite is required. Await the specification if unknown.",
+    "workstream": "unity-modernization"
+  },
+  {
+    "id": "v2-android",
+    "section": "Unity & Android",
+    "prompt": "What Android build changes are required for the actual Prime device?",
+    "helper": "Check OS/API, CPU architecture, graphics support, SDK/Gradle/JDK and native plugins. Record an install/build test; use Prime requirements rather than assuming mobile-store requirements apply.",
+    "workstream": "android-modernization"
+  },
+  {
+    "id": "v2-services",
+    "section": "Unity & Android",
+    "prompt": "What must happen to mobile ads, purchases, login and other mobile services?",
+    "helper": "List what Prime keeps, replaces or removes, plus dependencies on rewards, boosters or progression. Not applicable if no such services exist.",
+    "workstream": "gamesroomz-integration"
+  },
+  {
+    "id": "v2-mechanics",
+    "section": "Core Gameplay",
+    "prompt": "What changes are needed to reuse bubble-shooting mechanics?",
+    "helper": "Check aiming, firing, wall bounces, collision, matching, falling bubbles and board-clear behaviour. Identify the affected component rather than estimating each mechanic separately.",
+    "workstream": "core-gameplay"
+  },
+  {
+    "id": "v2-battle",
+    "section": "Core Gameplay",
+    "prompt": "What changes are needed to preserve the intended PvP rules?",
+    "helper": "Check scoring, next-bubble generation, opponent bubbles, timers and simultaneous win/loss. Specify tie-breaking, pending opponent bubbles and fairness rules; do not add optional redesign here.",
+    "workstream": "core-gameplay"
+  },
+  {
+    "id": "v2-assets",
+    "section": "Core Gameplay",
+    "prompt": "What gameplay content needs adapting for Prime?",
+    "helper": "Check artwork, animation, effects, audio and levels at the agreed resolution and viewing distance. Count UI layout effort in the UI workstream, not here.",
+    "workstream": "core-gameplay"
+  },
+  {
+    "id": "v2-state",
+    "section": "PvP Architecture",
+    "prompt": "What changes allow two independent boards in one game instance?",
+    "helper": "Check separate grids, bubble queues, scores, timers, effects, object pools, collisions and global/static references. An existing local/remote design may be adaptable.",
+    "workstream": "multiplayer-architecture"
+  },
+  {
+    "id": "v2-controllers",
+    "section": "PvP Architecture",
+    "prompt": "What changes allow two independent local player controllers?",
+    "helper": "Check ownership and references so aiming or firing for P1 never controls P2. Keep touch routing effort in Multi-Touch Input.",
+    "workstream": "player-controller"
+  },
+  {
+    "id": "v2-opponent",
+    "section": "PvP Architecture",
+    "prompt": "What changes deliver opponent bubbles correctly between local players?",
+    "helper": "Verify source and recipient, timing, ordering and exactly one delivery, including simultaneous sends and match end. Reuse the existing battle rules where possible.",
+    "workstream": "multiplayer-architecture"
+  },
+  {
+    "id": "v2-server",
+    "section": "PvP Architecture",
+    "prompt": "What server dependencies must change for same-table play?",
+    "helper": "Identify matchmaking, bubble generation, timers, move validation and winner determination. Specify what runs locally and what remains online. Future table-vs-table play is optional unless agreed.",
+    "workstream": "networking"
+  },
+  {
+    "id": "v2-ownership",
+    "section": "Multi-Touch & Input",
+    "prompt": "What changes keep each aiming gesture owned by the correct player?",
+    "helper": "Track each touch from press through movement to release/cancellation, including crossing the centre boundary and extra fingers. Do not reassign an active gesture just because its position changes.",
+    "workstream": "multi-touch"
+  },
+  {
+    "id": "v2-concurrent",
+    "section": "Multi-Touch & Input",
+    "prompt": "What changes allow both players to aim and shoot simultaneously?",
+    "helper": "Test on the actual touch panel: concurrent drags/releases, responsiveness, touch limits, edge touches and cancelled input. Mouse-only testing is insufficient.",
+    "workstream": "multi-touch"
+  },
+  {
+    "id": "v2-menus",
+    "section": "Multi-Touch & Input",
+    "prompt": "What changes prevent controls, menus and accidental touches interfering?",
+    "helper": "Check gameplay plus UI touches, reach, hand occlusion, extra fingers and the agreed pause/exit policy. Specify how one player’s menu affects the shared match.",
+    "workstream": "multi-touch"
+  },
+  {
+    "id": "v2-layout",
+    "section": "Prime 16:9 UI",
+    "prompt": "What layout changes make both playfields readable and reachable?",
+    "helper": "Confirm seating positions and playable dimensions. Preserve intended grid size and shooting angles; check control size and shared status areas on the tabletop.",
+    "workstream": "prime-ui"
+  },
+  {
+    "id": "v2-orientation",
+    "section": "Prime 16:9 UI",
+    "prompt": "What camera and input-coordinate changes are needed for the chosen orientation?",
+    "helper": "If players sit opposite each other, test P2 at 180 degrees with correct aiming and touch-to-board mapping. Do not assume opposite seating before layout approval.",
+    "workstream": "prime-ui"
+  },
+  {
+    "id": "v2-flow",
+    "section": "Prime 16:9 UI",
+    "prompt": "What UI changes support both players from ready-up through results?",
+    "helper": "Check player/seat labels, shared start, readable instructions, simultaneous readiness, correctly oriented results, rematch and return to launcher.",
+    "workstream": "prime-ui"
+  },
+  {
+    "id": "v2-identity",
+    "section": "Gamesroomz Integration",
+    "prompt": "What changes receive and use Gamesroomz player and session details?",
+    "helper": "Use the confirmed SDK/API contract for session ID, P1/P2 identity, seats and guest rules. Await the specification if it is unavailable; do not invent a contract.",
+    "workstream": "gamesroomz-integration"
+  },
+  {
+    "id": "v2-results",
+    "section": "Gamesroomz Integration",
+    "prompt": "What changes submit the correct result for both players?",
+    "helper": "Confirm the result schema, winner/tie/aborted-match rules and identity mapping. Include retries without duplicate results and the agreed offline-result policy.",
+    "workstream": "score-results"
+  },
+  {
+    "id": "v2-launcher",
+    "section": "Gamesroomz Integration",
+    "prompt": "What changes support launch, ready, start, end and return to launcher?",
+    "helper": "Use the agreed launcher contract. Handle interrupted or repeated launches, cancelled sessions and cleanup before the next users.",
+    "workstream": "launcher-lifecycle"
+  },
+  {
+    "id": "v2-performance",
+    "section": "Prime Hardware & QA",
+    "prompt": "What testing or fixes are needed to meet measured Prime performance targets?",
+    "helper": "Record actual device, resolution, FPS/frame-time and memory results with both boards and peak effects active. Include extended use. Unknown measurements require investigation, not an optimistic pass. Count shared QA here and code fixes in their owning workstream.",
+    "workstream": "qa"
+  },
+  {
+    "id": "v2-recovery",
+    "section": "Prime Hardware & QA",
+    "prompt": "What testing or fixes are needed for network and app interruptions?",
+    "helper": "Test loss of connection during start, play and result upload, plus background/resume or forced exit. Verify the agreed continue/abort policy and no duplicate or misassigned result.",
+    "workstream": "qa"
+  },
+  {
+    "id": "v2-repeat",
+    "section": "Prime Hardware & QA",
+    "prompt": "What testing or fixes are needed for repeated two-player sessions?",
+    "helper": "Verify ready → play → result → exit → next users, clean identities and board state, and no stale touch, event or network handlers. Include both orientations and simultaneous match-ending cases.",
+    "workstream": "qa"
+  }
 ];
 
 export const planTemplate: Workstream[] = [
   {
     id:"technical-investigation", title:"Technical Investigation",
-    currentImplementation:"Legacy Unity mobile project with complete source code.",
+    currentImplementation:"",
     primeRequirement:"Establish a verified baseline of project health, dependencies and build status before conversion.",
-    classification:"modify", whyChange:"", proposedImplementation:"",
-    reusedComponents:"Existing source repository, game assets and documentation.",
-    changedComponents:"Audit only; no production behaviour should change in this workstream.",
+    classification:"", whyChange:"", proposedImplementation:"",
+    reusedComponents:"",
+    changedComponents:"",
     deliverable:"Technical baseline report and verified build/open status.",
-    personDays:0, dependencies:"Access to full source, historical SDKs/plugins and developer environment.", risk:"medium", scopeType:"mandatory"
+    personDays:null, reviewed:false, dependencies:"", risk:"", scopeType:"mandatory"
   },
   {
-    id:"unity-modernization", title:"Unity Modernization",
-    currentImplementation:"Existing game uses a legacy Unity version.",
-    primeRequirement:"Run on one agreed, supported Unity version for Prime and future Gamesroomz SDK maintenance.",
-    classification:"modify", whyChange:"", proposedImplementation:"",
-    reusedComponents:"Scenes, prefabs, C# game logic and assets where compatible.",
-    changedComponents:"Deprecated Unity APIs, packages, plugins and project settings as required.",
+    id:"unity-modernization", title:"Unity & Dependency Compatibility",
+    currentImplementation:"",
+    primeRequirement:"Meet the confirmed Prime Unity and SDK compatibility baseline; upgrade only where required.",
+    classification:"", whyChange:"", proposedImplementation:"",
+    reusedComponents:"",
+    changedComponents:"",
     deliverable:"Project opens, compiles and runs cleanly on the agreed Prime Unity version.",
-    personDays:0, dependencies:"Target Unity version must be agreed.", risk:"medium", scopeType:"mandatory"
+    personDays:null, reviewed:false, dependencies:"", risk:"", scopeType:"mandatory"
   },
   {
-    id:"android-modernization", title:"Android Toolchain Modernization",
-    currentImplementation:"Mobile game uses an older Android SDK/toolchain.",
+    id:"android-modernization", title:"Android Build Compatibility",
+    currentImplementation:"",
     primeRequirement:"Produce a stable Android build compatible with the Prime OS and hardware baseline.",
-    classification:"modify", whyChange:"", proposedImplementation:"",
-    reusedComponents:"Existing Android-compatible game code where possible.",
-    changedComponents:"SDK/API level, Gradle, JDK, manifests and native plugins as required.",
+    classification:"", whyChange:"", proposedImplementation:"",
+    reusedComponents:"",
+    changedComponents:"",
     deliverable:"Installable Prime-compatible Android build.",
-    personDays:0, dependencies:"Prime Android OS/API baseline and hardware access.", risk:"medium", scopeType:"mandatory"
+    personDays:null, reviewed:false, dependencies:"", risk:"", scopeType:"mandatory"
   },
   {
     id:"core-gameplay", title:"Core Gameplay",
-    currentImplementation:"Existing Bubble Shooter PvP mechanics, scoring, attacks, levels and content.",
+    currentImplementation:"",
     primeRequirement:"Retain proven gameplay unless a Prime constraint makes a change necessary.",
-    classification:"reuse", whyChange:"", proposedImplementation:"",
-    reusedComponents:"Bubble mechanics, aiming, collision/matching, score rules, attack rules, assets, animation and audio where compatible.",
-    changedComponents:"Only items specifically identified by the assessment.",
+    classification:"", whyChange:"", proposedImplementation:"",
+    reusedComponents:"",
+    changedComponents:"",
     deliverable:"Prime build preserves the intended Bubble Shooter gameplay.",
-    personDays:0, dependencies:"Multiplayer architecture decisions.", risk:"low", scopeType:"mandatory"
+    personDays:null, reviewed:false, dependencies:"", risk:"", scopeType:"mandatory"
   },
   {
     id:"multiplayer-architecture", title:"Shared-Device Multiplayer Architecture",
-    currentImplementation:"Online mobile PvP: typically one local player per device and one remote opponent.",
+    currentImplementation:"",
     primeRequirement:"Two players play simultaneously inside one Unity instance on one Prime tabletop device.",
-    classification:"rewrite", whyChange:"", proposedImplementation:"",
-    reusedComponents:"Existing battle rules and game-state logic where separable from networking.",
-    changedComponents:"Local/remote assumptions, player ownership, game-state orchestration and match lifecycle.",
+    classification:"", whyChange:"", proposedImplementation:"",
+    reusedComponents:"",
+    changedComponents:"",
     deliverable:"P1 and P2 can participate in the same local match instance.",
-    personDays:0, dependencies:"Player controller, multi-touch and networking decisions.", risk:"high", scopeType:"mandatory"
+    personDays:null, reviewed:false, dependencies:"", risk:"", scopeType:"mandatory"
   },
   {
     id:"player-controller", title:"Player Controller",
-    currentImplementation:"Current controller is designed around the mobile local-player model.",
+    currentImplementation:"",
     primeRequirement:"Independent P1 and P2 controllers inside the same game instance.",
-    classification:"modify", whyChange:"", proposedImplementation:"",
-    reusedComponents:"Existing shooter-control logic where it can be parameterised by player.",
-    changedComponents:"Player ownership, state, score and per-player references.",
+    classification:"", whyChange:"", proposedImplementation:"",
+    reusedComponents:"",
+    changedComponents:"",
     deliverable:"Two independent player controllers with no cross-control leakage.",
-    personDays:0, dependencies:"Shared-device multiplayer architecture.", risk:"high", scopeType:"mandatory"
+    personDays:null, reviewed:false, dependencies:"", risk:"", scopeType:"mandatory"
   },
   {
     id:"multi-touch", title:"Multi-Touch Input",
-    currentImplementation:"Mobile input is primarily designed for one active local player.",
+    currentImplementation:"",
     primeRequirement:"P1 and P2 must aim/shoot simultaneously on separate tabletop regions.",
-    classification:"new", whyChange:"", proposedImplementation:"",
-    reusedComponents:"Existing touch gestures and aiming behaviour where appropriate.",
-    changedComponents:"Input routing, touch ownership, player zones and simultaneous gesture handling.",
+    classification:"", whyChange:"", proposedImplementation:"",
+    reusedComponents:"",
+    changedComponents:"",
     deliverable:"Reliable simultaneous multi-touch with independent P1/P2 input.",
-    personDays:0, dependencies:"Final Prime screen layout and hardware touch behaviour.", risk:"high", scopeType:"mandatory"
+    personDays:null, reviewed:false, dependencies:"", risk:"", scopeType:"mandatory"
   },
   {
     id:"prime-ui", title:"Prime 16:9 Tabletop UI",
-    currentImplementation:"Mobile portrait UI designed for one player viewing one device.",
+    currentImplementation:"",
     primeRequirement:"16:9 tabletop layout with two vertical P1/P2 playfields; opposite player UI may require 180° orientation.",
-    classification:"modify", whyChange:"", proposedImplementation:"",
-    reusedComponents:"Existing gameplay visuals and UI assets where resolution/layout permits.",
-    changedComponents:"Canvas layout, camera framing, menus, results, player labels and shared battle/status area.",
+    classification:"", whyChange:"", proposedImplementation:"",
+    reusedComponents:"",
+    changedComponents:"",
     deliverable:"Readable and usable two-player Prime tabletop interface.",
-    personDays:0, dependencies:"Approved Prime UX/layout.", risk:"medium", scopeType:"mandatory"
+    personDays:null, reviewed:false, dependencies:"", risk:"", scopeType:"mandatory"
   },
   {
     id:"networking", title:"Networking",
-    currentImplementation:"Existing online PvP synchronizes players across separate mobile devices.",
+    currentImplementation:"",
     primeRequirement:"Same-table gameplay should run locally where practical; backend remains responsible for platform/session/result needs.",
-    classification:"modify", whyChange:"", proposedImplementation:"",
-    reusedComponents:"Online PvP components needed for future table-vs-table play may be retained separately.",
-    changedComponents:"Remove unnecessary same-table move synchronization and decouple local match logic from remote-player assumptions.",
+    classification:"", whyChange:"", proposedImplementation:"",
+    reusedComponents:"",
+    changedComponents:"",
     deliverable:"Stable local Prime match with only required backend communications.",
-    personDays:0, dependencies:"Gamesroomz platform contract and future online PvP scope.", risk:"medium", scopeType:"mandatory"
+    personDays:null, reviewed:false, dependencies:"", risk:"", scopeType:"mandatory"
   },
   {
     id:"gamesroomz-integration", title:"Gamesroomz SDK Integration",
-    currentImplementation:"Game currently uses its own mobile account/session integrations.",
-    primeRequirement:"Gamesroomz provides authenticated player identity, session and player-seat information.",
-    classification:"new", whyChange:"", proposedImplementation:"",
-    reusedComponents:"Game-facing abstractions where they can be adapted.",
-    changedComponents:"Legacy login/session hooks replaced by Gamesroomz SDK contract.",
+    currentImplementation:"",
+    primeRequirement:"Use the agreed Gamesroomz identity/session contract and resolve dependencies on mobile-only services.",
+    classification:"", whyChange:"", proposedImplementation:"",
+    reusedComponents:"",
+    changedComponents:"",
     deliverable:"Game initializes from Gamesroomz and receives P1/P2 session data.",
-    personDays:0, dependencies:"Gamesroomz Unity SDK/API specification.", risk:"medium", scopeType:"mandatory"
+    personDays:null, reviewed:false, dependencies:"", risk:"", scopeType:"mandatory"
   },
   {
     id:"score-results", title:"Score & Result Integration",
-    currentImplementation:"Existing game already supports score upload.",
+    currentImplementation:"",
     primeRequirement:"Submit P1/P2 result, winner and agreed game metrics through Gamesroomz.",
-    classification:"modify", whyChange:"", proposedImplementation:"",
-    reusedComponents:"Existing score calculation and result-generation logic.",
-    changedComponents:"Transport/API layer and player identity mapping.",
+    classification:"", whyChange:"", proposedImplementation:"",
+    reusedComponents:"",
+    changedComponents:"",
     deliverable:"Verified result reaches Gamesroomz for both players.",
-    personDays:0, dependencies:"Gamesroomz result schema.", risk:"low", scopeType:"mandatory"
+    personDays:null, reviewed:false, dependencies:"", risk:"", scopeType:"mandatory"
   },
   {
     id:"launcher-lifecycle", title:"Prime Launcher Lifecycle",
-    currentImplementation:"Mobile app owns its own start/exit lifecycle.",
+    currentImplementation:"",
     primeRequirement:"Prime launcher starts the game with a session and receives clean termination/return control.",
-    classification:"new", whyChange:"", proposedImplementation:"",
-    reusedComponents:"Existing game start/end events where available.",
-    changedComponents:"Launch parameters, ready/start/end events, cleanup and return-to-launcher handling.",
+    classification:"", whyChange:"", proposedImplementation:"",
+    reusedComponents:"",
+    changedComponents:"",
     deliverable:"Repeatable launch → play → result → exit → next-session flow.",
-    personDays:0, dependencies:"Prime launcher contract.", risk:"medium", scopeType:"mandatory"
+    personDays:null, reviewed:false, dependencies:"", risk:"", scopeType:"mandatory"
   },
   {
     id:"qa", title:"Prime Hardware QA & Stabilization",
-    currentImplementation:"Existing QA is focused on mobile Android/iOS devices.",
+    currentImplementation:"",
     primeRequirement:"Validate large-screen rendering, multi-touch, performance, session cleanup and reliability on Prime hardware.",
-    classification:"new", whyChange:"", proposedImplementation:"",
-    reusedComponents:"Existing functional test cases where still relevant.",
-    changedComponents:"New Prime-specific hardware and multi-player test coverage.",
+    classification:"", whyChange:"", proposedImplementation:"",
+    reusedComponents:"",
+    changedComponents:"",
     deliverable:"Prime conversion QA checklist completed with blocking defects resolved.",
-    personDays:0, dependencies:"Access to representative Prime hardware.", risk:"medium", scopeType:"mandatory"
+    personDays:null, reviewed:false, dependencies:"", risk:"", scopeType:"mandatory"
   }
 ];
+

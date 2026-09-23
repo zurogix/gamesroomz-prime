@@ -1,3 +1,4 @@
+import { hasEstimate } from "@/lib/assessment";
 import { Fragment } from "react";
 import { Risk, Workstream } from "@/lib/types";
 
@@ -8,7 +9,7 @@ const RISK_ROWS: { risk: Risk; label: string }[] = [
   { risk: "medium", label: "Medium" },
   { risk: "low", label: "Low risk" },
 ];
-const EFFORT_COLUMNS = ["≤ 3 days", "4–7 days", "8+ days"];
+const EFFORT_COLUMNS = ["≤ 3 days", "> 3–7 days", "> 7 days"];
 const SMALL_MAX_DAYS = 3;
 const MEDIUM_MAX_DAYS = 7;
 const TITLE_SUFFIX = / (Architecture|Integration|Modernization|& Stabilization|Input|Lifecycle)$/;
@@ -38,7 +39,7 @@ export default function RiskMatrix({ plan, onOpen }: Props) {
             {EFFORT_COLUMNS.map((_, c) => (
               <div key={c} className={`cell ${cellTone(r, c)}`}>
                 {plan
-                  .filter((w) => w.risk === row.risk && effortColumn(Number(w.personDays) || 0) === c)
+                  .filter((w) => w.classification !== "na" && hasEstimate(w) && w.risk === row.risk && effortColumn(Number(w.personDays) || 0) === c)
                   .map((w) => (
                     <button key={w.id} type="button" className="tag" onClick={() => onOpen(w.id)}>
                       {w.title.replace(TITLE_SUFFIX, "")}
@@ -49,7 +50,8 @@ export default function RiskMatrix({ plan, onOpen }: Props) {
           </Fragment>
         ))}
       </div>
-      <span className="hint">Top-right cells need the most attention before approval.</span>
+      <span className="hint">Only assessed risks with valid estimates appear here. Top-right cells need the most attention.</span>
     </section>
   );
 }
+

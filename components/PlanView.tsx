@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { planFieldsDone, PLAN_FIELD_COUNT, totalPlanDays } from "@/lib/assessment";
+import { planFieldsDone, totalPlanDays, effortDays, hasEstimate, workstreamIssues } from "@/lib/assessment";
 import { formatDays, SUMMARY } from "@/lib/sections";
 import { AssessmentState, Workstream } from "@/lib/types";
 import PageHeader from "./PageHeader";
@@ -17,8 +17,8 @@ type Props = {
   onNavigate: (view: string) => void;
 };
 
-const RISK_ORDER = { low: 0, medium: 1, high: 2 };
-const CLASS_ORDER = { "": -1, reuse: 0, modify: 1, rewrite: 2, new: 3 };
+const RISK_ORDER = { "": -1, low: 0, medium: 1, high: 2 };
+const CLASS_ORDER = { "": -1, reuse: 0, modify: 1, rewrite: 2, new: 3, na: 4 };
 const COLUMNS: { key: SortKey; label: string; numeric?: boolean }[] = [
   { key: "title", label: "Workstream" },
   { key: "classification", label: "Action" },
@@ -49,20 +49,20 @@ export default function PlanView({ state, savedAt, onOpen, onSync, onNavigate }:
   if (key) rows.sort((a, b) => (sortValue(a, key) > sortValue(b, key) ? 1 : sortValue(a, key) < sortValue(b, key) ? -1 : 0) * dir);
 
   const toggleSort = (k: SortKey) => setSort((s) => ({ key: k, dir: s.key === k ? -s.dir : 1 }));
-  const incomplete = state.plan.filter((w) => planFieldsDone(w) < PLAN_FIELD_COUNT).length;
-  const renderRow = (w: Workstream) => <PlanTableRow key={w.id} workstream={w} onOpen={onOpen} />;
-  const crumb = <>Plan <span>·</span> {state.plan.length} workstreams <span>·</span> {formatDays(totalPlanDays(state))} person-days</>;
+  const incomplete = state.plan.filter((w) => workstreamIssues(state, w).length > 0).length;
+  const renderRow = (w: Workstream) => <PlanTableRow key={w.id} workstream={w} issues={workstreamIssues(state, w)} onOpen={onOpen} />;
+  const crumb = <>Plan <span>·</span> {state.plan.length} workstreams <span>·</span> {state.plan.some(hasEstimate) ? `${formatDays(totalPlanDays(state))} entered person-days` : "Not estimated"}</>;
 
   return (
     <>
-      <PageHeader title="Conversion Plan" crumb={crumb} savedAt={savedAt} actions={<button type="button" className="btn" onClick={onSync}>Sync from assessment</button>} />
+      <PageHeader title="Conversion Plan" crumb={crumb} savedAt={savedAt} actions={<button type="button" className="btn" onClick={onSync}>Copy findings to empty plans</button>} />
       <div className="content">
         <div className="toolbar">
           <div className="seg" role="group" aria-label="Grouping">
             <button type="button" className={!grouped ? "on" : ""} aria-pressed={!grouped} onClick={() => setGrouped(false)}>All workstreams</button>
             <button type="button" className={grouped ? "on" : ""} aria-pressed={grouped} onClick={() => setGrouped(true)}>Mandatory vs enhancement</button>
           </div>
-          <span className="hint">Click a row to edit it. Click a column header to sort.</span>
+          <span className="hint">Estimate each workstream once. Choose its action after reviewing linked findings.</span>
         </div>
 
         <div className="table-wrap">
@@ -82,11 +82,11 @@ export default function PlanView({ state, savedAt, onOpen, onSync, onNavigate }:
               {!grouped && rows.map(renderRow)}
               {grouped && GROUPS.map((g) => {
                 const items = rows.filter((w) => w.scopeType === g.scope);
-                const days = items.reduce((sum, w) => sum + (Number(w.personDays) || 0), 0);
+                const days = items.reduce((sum, w) => sum + effortDays(w), 0);
                 return [
                   <tr className="group" key={g.scope}>
                     <td colSpan={4}>{g.label} · {items.length}</td>
-                    <td className="n">{formatDays(days)}</td>
+                    <td className="n">{items.length && !items.some(hasEstimate) ? "—" : formatDays(days)}</td>
                     <td />
                   </tr>,
                   ...items.map(renderRow),
@@ -102,10 +102,11 @@ export default function PlanView({ state, savedAt, onOpen, onSync, onNavigate }:
         </div>
 
         <div className="pager">
-          <span className="hint">{incomplete} workstreams still missing detail</span>
-          <button type="button" className="btn primary" onClick={() => onNavigate(SUMMARY)}>Generate management summary →</button>
+          <span className="hint">{incomplete} workstreams still need detail or review</span>
+          <button type="button" className="btn primary" onClick={() => onNavigate(SUMMARY)}>View management summary →</button>
         </div>
       </div>
     </>
   );
 }
+

@@ -1,15 +1,20 @@
-import { AssessmentState, Classification, Question, QuestionResponse, Workstream } from "./types";
+import {
+  AssessmentState,
+  Classification,
+  Question,
+  QuestionResponse,
+  Workstream,
+} from "./types";
 import { questions, planTemplate } from "./questions";
-import { CONFIRMATIONS, ImpactClass } from "./sections";
+import { CLASSES, CONFIRMATIONS, ImpactClass } from "./sections";
 
 export const emptyResponse = (): QuestionResponse => ({
   answer: "",
   classification: "",
   explanation: "",
-  effortDays: 0,
 });
-
 export const initialAssessment = (): AssessmentState => ({
+  schemaVersion: 2,
   gameInfo: {
     gameName: "Bubble Shooter PvP",
     developer: "",
@@ -19,168 +24,296 @@ export const initialAssessment = (): AssessmentState => ({
     currentMultiplayer: "Online PvP — one player per mobile device",
     targetPlayers: "2 players on one Prime device",
     assessmentDate: new Date().toISOString().slice(0, 10),
+    targetHardware: "",
+    targetUnity: "",
+    targetLayout: "",
+    platformContract: "",
+    performanceTarget: "",
   },
   responses: Object.fromEntries(questions.map((q) => [q.id, emptyResponse()])),
-  plan: planTemplate.map((item) => ({ ...item })),
+  plan: planTemplate.map((w) => ({ ...w })),
   status: "draft",
   checks: CONFIRMATIONS.map(() => false),
 });
 
-/** Fill in anything missing from a draft saved by an older version of the portal. */
-export function hydrateAssessment(saved: Partial<AssessmentState>): AssessmentState {
+const isObject = (v: unknown): v is Record<string, unknown> =>
+  Boolean(v && typeof v === "object" && !Array.isArray(v));
+const classification = (v: unknown): Classification =>
+  CLASSES.includes(v as ImpactClass) ? (v as ImpactClass) : "";
+export const validDays = (v: unknown): v is number =>
+  typeof v === "number" && Number.isFinite(v) && v >= 0;
+
+/** Old answers are retained for reference, never silently applied to changed questions. */
+export function hydrateAssessment(saved: unknown): AssessmentState {
   const base = initialAssessment();
-  const responses = { ...base.responses };
-  Object.entries(saved.responses ?? {}).forEach(([id, r]) => {
-    responses[id] = { ...emptyResponse(), ...r };
-  });
-  const checks = base.checks.map((_, i) => Boolean(saved.checks?.[i]));
-  return {
-    ...base,
-    ...saved,
-    gameInfo: { ...base.gameInfo, ...saved.gameInfo },
-    responses,
-    plan: saved.plan?.length ? saved.plan : base.plan,
-    checks,
-  };
-}
-
-const complexityValue: Record<ImpactClass, number> = {
-  reuse: 0,
-  modify: 1,
-  rewrite: 4,
-  new: 4,
-};
-
-const complexityLevels = [
-  { max: 0.16, label: "Minor Conversion", level: "minor" },
-  { max: 0.34, label: "Moderate Conversion", level: "moderate" },
-  { max: 0.58, label: "Major Conversion / Refactor", level: "major" },
-  { max: Infinity, label: "Near-Complete Rebuild", level: "rebuild" },
-];
-
-export function calculateComplexity(state: AssessmentState) {
-  let weighted = 0;
-  let possible = 0;
-
-  for (const question of questions) {
-    const response = state.responses[question.id];
-    possible += question.weight * 4;
-    if (response?.classification) {
-      weighted += question.weight * complexityValue[response.classification];
-    } else if (response?.answer === "unsure") {
-      weighted += question.weight * 2;
+  if (!isObject(saved)) return base;
+  const current = saved.schemaVersion === 2;
+  if (isObject(saved.gameInfo)) {
+    for (const key of Object.keys(
+      base.gameInfo,
+    ) as (keyof typeof base.gameInfo)[]) {
+      if (typeof saved.gameInfo[key] === "string")
+        base.gameInfo[key] = saved.gameInfo[key] as string;
     }
   }
-
-  const ratio = possible ? weighted / possible : 0;
-  const index = complexityLevels.findIndex((band) => ratio < band.max);
-  const { label, level } = complexityLevels[index];
-  return { label, level, ratio, index };
+  if (current && isObject(saved.responses)) {
+    for (const q of questions) {
+      const r = saved.responses[q.id];
+      if (!isObject(r)) continue;
+      const c = classification(r.classification);
+      const pending = r.answer === "unsure" || r.answer === "awaiting";
+      base.responses[q.id] = {
+        answer: pending ? (r.answer as "unsure" | "awaiting") : c ? "yes" : "",
+        classification: pending ? "" : c,
+        explanation: typeof r.explanation === "string" ? r.explanation : "",
+      };
+    }
+  }
+  if (Array.isArray(saved.plan)) {
+    base.plan = base.plan.map((w) => {
+      const prior =
+        saved.plan instanceof Array
+          ? saved.plan.find((x) => isObject(x) && x.id === w.id)
+          : null;
+      if (!isObject(prior)) return w;
+      const next = { ...w };
+      for (const key of [
+        "currentImplementation",
+        "whyChange",
+        "proposedImplementation",
+        "reusedComponents",
+        "changedComponents",
+        "deliverable",
+        "dependencies",
+      ] as const) {
+        if (typeof prior[key] === "string") next[key] = prior[key];
+      }
+      next.classification = current ? classification(prior.classification) : "";
+      next.personDays =
+        validDays(prior.personDays) && (current || prior.personDays > 0)
+          ? prior.personDays
+          : null;
+      next.risk =
+        current && ["low", "medium", "high"].includes(String(prior.risk))
+          ? (prior.risk as Workstream["risk"])
+          : "";
+      next.scopeType =
+        prior.scopeType === "enhancement" ? "enhancement" : "mandatory";
+      next.reviewed = current && prior.reviewed === true;
+      return next;
+    });
+  }
+  if (!current) base.legacyDraft = saved;
+  else if (saved.legacyDraft) base.legacyDraft = saved.legacyDraft;
+  if (current) {
+    base.checks = base.checks.map(
+      (_, i) => Array.isArray(saved.checks) && saved.checks[i] === true,
+    );
+    const status = saved.status as AssessmentState["status"];
+    if (
+      [
+        "draft",
+        "planning",
+        "assessment-complete",
+        "submitted",
+        "changes-requested",
+        "approved",
+      ].includes(status) &&
+      canSetStatus(base, status)
+    )
+      base.status = status;
+  }
+  return base;
 }
 
-export function totalAssessmentDays(state: AssessmentState) {
-  return Object.values(state.responses).reduce((sum, r) => sum + (Number(r.effortDays) || 0), 0);
+export function isQuestionDone(state: AssessmentState, q: Question) {
+  const r = state.responses[q.id];
+  return Boolean(
+    r?.answer === "yes" && r.classification && r.explanation.trim(),
+  );
+}
+export function assessmentCoverage(state: AssessmentState) {
+  return Math.round(
+    (questions.filter((q) => isQuestionDone(state, q)).length /
+      questions.length) *
+      100,
+  );
+}
+export function needsReason(state: AssessmentState, q: Question) {
+  const r = state.responses[q.id];
+  return Boolean(r?.classification && !r.explanation.trim());
+}
+export type AttentionItem = {
+  question: Question;
+  kind: "reason" | "unsure" | "awaiting" | "unanswered";
+  classification: Classification;
+};
+export function attentionItems(state: AssessmentState): AttentionItem[] {
+  return questions
+    .filter((q) => !isQuestionDone(state, q))
+    .map((question) => {
+      const r = state.responses[question.id];
+      return {
+        question,
+        classification: r?.classification || "",
+        kind: needsReason(state, question)
+          ? "reason"
+          : r?.answer === "awaiting"
+            ? "awaiting"
+            : r?.answer === "unsure"
+              ? "unsure"
+              : "unanswered",
+      };
+    });
+}
+export function classificationCounts(state: AssessmentState) {
+  const counts = { reuse: 0, modify: 0, rewrite: 0, new: 0, na: 0, none: 0 };
+  questions.forEach((q) => {
+    counts[state.responses[q.id]?.classification || "none"] += 1;
+  });
+  return counts;
 }
 
-export function totalPlanDays(state: AssessmentState) {
-  return state.plan.reduce((sum, w) => sum + (Number(w.personDays) || 0), 0);
+export const PLAN_FIELD_COUNT = 8;
+export function hasEstimate(w: Workstream) {
+  if (!validDays(w.personDays)) return false;
+  if (w.classification === "na") return w.personDays === 0;
+  if (w.classification === "reuse") return true;
+  return Boolean(w.classification && w.personDays > 0);
 }
-
-export const PLAN_FIELD_COUNT = 6;
-
-/** How many of the six fields a reviewer needs are filled in for a workstream. */
 export function planFieldsDone(w: Workstream) {
+  if (w.classification === "na")
+    return w.whyChange.trim() && hasEstimate(w) && w.reviewed
+      ? PLAN_FIELD_COUNT
+      : 0;
   return [
     w.classification,
     w.whyChange.trim(),
     w.proposedImplementation.trim(),
     w.deliverable.trim(),
     w.dependencies.trim(),
-    Number(w.personDays) > 0,
+    hasEstimate(w),
+    w.risk,
+    w.reviewed,
   ].filter(Boolean).length;
 }
-
+export function workstreamIssues(
+  state: AssessmentState,
+  w: Workstream,
+): string[] {
+  const related = questions.filter((q) => q.workstream === w.id);
+  const issues: string[] = [];
+  if (related.some((q) => !isQuestionDone(state, q)))
+    issues.push("Resolve linked assessment findings");
+  const classes = related.map((q) => state.responses[q.id]?.classification);
+  if (w.classification === "na" && classes.some((c) => c !== "na"))
+    issues.push("Not applicable conflicts with linked findings");
+  if (
+    w.classification === "reuse" &&
+    classes.some((c) => c && c !== "reuse" && c !== "na")
+  )
+    issues.push("Reuse conflicts with linked changes");
+  if (planFieldsDone(w) < PLAN_FIELD_COUNT)
+    issues.push("Complete the plan, estimate, risk and review");
+  return issues;
+}
 export function planCoverage(state: AssessmentState) {
-  const complete = state.plan.filter((w) => planFieldsDone(w) === PLAN_FIELD_COUNT).length;
-  return Math.round((complete / state.plan.length) * 100);
+  return state.plan.length
+    ? Math.round(
+        (state.plan.filter((w) => !workstreamIssues(state, w).length).length /
+          state.plan.length) *
+          100,
+      )
+    : 0;
 }
-
-export function isQuestionDone(state: AssessmentState, q: Question) {
-  const r = state.responses[q.id];
-  return Boolean(r?.answer && r.classification);
+export const effortDays = (w: Workstream) =>
+  w.classification !== "na" && validDays(w.personDays) ? w.personDays : 0;
+export function totalPlanDays(state: AssessmentState) {
+  return state.plan.reduce((sum, w) => sum + effortDays(w), 0);
 }
-
-export function assessmentCoverage(state: AssessmentState) {
-  const complete = questions.filter((q) => isQuestionDone(state, q)).length;
-  return Math.round((complete / questions.length) * 100);
-}
-
-export function needsReason(state: AssessmentState, q: Question) {
-  const r = state.responses[q.id];
-  const heavy = r?.classification === "rewrite" || r?.classification === "new";
-  return heavy && !r.explanation.trim();
-}
-
-export type AttentionItem = { question: Question; kind: "reason" | "unsure"; classification: Classification };
-
-export function attentionItems(state: AssessmentState): AttentionItem[] {
-  return questions.flatMap((question): AttentionItem[] => {
-    const r = state.responses[question.id];
-    if (needsReason(state, question)) return [{ question, kind: "reason", classification: r.classification }];
-    if (r?.answer === "unsure") return [{ question, kind: "unsure", classification: r.classification }];
-    return [];
-  });
-}
-
-export function classificationCounts(state: AssessmentState) {
-  const counts = { reuse: 0, modify: 0, rewrite: 0, new: 0, none: 0 };
-  questions.forEach((q) => {
-    const c = state.responses[q.id]?.classification;
-    counts[c || "none"] += 1;
-  });
-  return counts;
-}
-
 export function deriveFindings(state: AssessmentState) {
   const buckets: Record<ImpactClass, string[]> = {
     reuse: [],
     modify: [],
     rewrite: [],
     new: [],
+    na: [],
   };
   state.plan.forEach((w) => {
     if (w.classification) buckets[w.classification].push(w.title);
   });
   return buckets;
 }
-
-export function syncPlanFromAssessment(state: AssessmentState): Workstream[] {
-  return state.plan.map((workstream) => {
-    const related = questions.filter((q) => q.workstream === workstream.id);
-    const classes = related
-      .map((q) => state.responses[q.id]?.classification)
-      .filter(Boolean) as ImpactClass[];
-
-    if (!classes.length) return workstream;
-
-    const strongest = [...classes].sort(
-      (a, b) => complexityValue[b] - complexityValue[a]
-    )[0];
-
-    const explanations = related
-      .map((q) => state.responses[q.id]?.explanation?.trim())
-      .filter(Boolean);
-
-    const effort = related.reduce(
-      (sum, q) => sum + (Number(state.responses[q.id]?.effortDays) || 0),
-      0
+export function targetGaps(state: AssessmentState) {
+  const fields = {
+    targetHardware: "Prime device / OS / resolution",
+    targetUnity: "Unity / SDK baseline",
+    targetLayout: "Seating and playfield layout",
+    platformContract: "Gamesroomz / launcher contract",
+    performanceTarget: "Performance acceptance targets",
+  } as const;
+  return Object.entries(fields)
+    .filter(([key]) => !state.gameInfo[key as keyof typeof fields].trim())
+    .map(([, label]) => label);
+}
+export function reviewBlockers(state: AssessmentState) {
+  const blockers = targetGaps(state).map((label) => `Confirm ${label}`);
+  const questionsLeft = attentionItems(state).length;
+  if (questionsLeft)
+    blockers.push(
+      `${questionsLeft} assessment findings need resolution or evidence`,
     );
+  const plansLeft = state.plan.filter(
+    (w) => workstreamIssues(state, w).length,
+  ).length;
+  if (plansLeft)
+    blockers.push(
+      `${plansLeft} workstreams need a complete, consistent plan and review`,
+    );
+  if (!state.gameInfo.gameName.trim() || !state.gameInfo.developer.trim())
+    blockers.push("Enter the game name and developer / team");
+  return blockers;
+}
+export function assessmentSummary(state: AssessmentState) {
+  const started = questions.some((q) => {
+    const r = state.responses[q.id];
+    return r?.classification || r?.answer || r?.explanation.trim();
+  });
+  const ready = reviewBlockers(state).length === 0;
+  return {
+    label: !started
+      ? "Not assessed"
+      : ready
+        ? "Ready for review"
+        : "Preliminary — incomplete",
+    ready,
+  };
+}
+export function canSetStatus(
+  state: AssessmentState,
+  status: AssessmentState["status"],
+) {
+  if (status === "assessment-complete")
+    return assessmentCoverage(state) === 100 && targetGaps(state).length === 0;
+  if (status === "submitted" || status === "approved")
+    return reviewBlockers(state).length === 0 && state.checks.every(Boolean);
+  return true;
+}
 
-    return {
-      ...workstream,
-      classification: strongest,
-      whyChange: workstream.whyChange || explanations.join("\n"),
-      personDays: workstream.personDays || effort,
-    };
+/** Copy evidence only into an empty plan field. Never infer a blanket rewrite or add overlapping estimates. */
+export function syncPlanFromAssessment(state: AssessmentState): Workstream[] {
+  return state.plan.map((w) => {
+    const notes = questions
+      .filter((q) => q.workstream === w.id)
+      .flatMap((q) => {
+        const r = state.responses[q.id];
+        return r?.explanation.trim()
+          ? [`${q.prompt}\n${r.explanation.trim()}`]
+          : [];
+      })
+      .join("\n\n");
+    return !w.whyChange && notes
+      ? { ...w, whyChange: notes, reviewed: false }
+      : w;
   });
 }
