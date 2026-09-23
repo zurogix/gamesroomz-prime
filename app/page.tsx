@@ -149,7 +149,8 @@ export default function HomePage() {
         <header className="topbar">
           <div>
             <span className="eyebrow">Techninier · Prime Game Conversion</span>
-            <h1>{active}</h1>\n            <div className="workspace-meta"><span>{state.gameInfo.gameName || "Untitled game"}</span><i /> <span>Draft autosaved locally</span></div>
+            <h1>{active}</h1>
+            <div className="workspace-meta"><span>{state.gameInfo.gameName || "Untitled game"}</span><i /> <span>Draft autosaved locally</span></div>
           </div>
           <div className="top-actions">
             <Pill tone={complexity.level}>{complexity.label}</Pill>
