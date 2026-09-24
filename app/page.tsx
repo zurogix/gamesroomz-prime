@@ -16,7 +16,7 @@ import { ASSESSMENT_SECTIONS, OVERVIEW, PLAN, SUMMARY } from "@/lib/sections";
 
 export default function HomePage() {
   const {
-    state, savedAt, updateGameInfo, updateResponse, updatePlan, setStatus, toggleCheck, syncPlan, reset,
+    state, savedAt, updateGameInfo, updateResponse, updateEngineAssessment, updateEngineOption, updatePlan, setStatus, toggleCheck, syncPlan, reset,
   } = useAssessment();
   const { theme, setTheme } = useTheme();
   const [view, setView] = useState(OVERVIEW);
@@ -85,6 +85,8 @@ export default function HomePage() {
           savedAt={savedAt}
           focusId={focusId}
           onChange={updateResponse}
+          onEngineChange={updateEngineAssessment}
+          onEngineOptionChange={updateEngineOption}
           onNavigate={navigate}
           onContinueToPlan={continueToPlan}
         />

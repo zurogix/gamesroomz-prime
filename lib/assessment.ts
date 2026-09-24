@@ -1,4 +1,4 @@
-import { AssessmentState, Classification, Question, QuestionResponse, Workstream } from "./types";
+import { AssessmentState, Classification, EngineOptionEstimate, Question, QuestionResponse, Workstream } from "./types";
 import { questions, planTemplate } from "./questions";
 import { CONFIRMATIONS, ImpactClass } from "./sections";
 
@@ -7,6 +7,17 @@ export const emptyResponse = (): QuestionResponse => ({
   classification: "",
   explanation: "",
   effortDays: 0,
+});
+
+const emptyEngineOption = (): EngineOptionEstimate => ({
+  coreOrBuildDays: 0,
+  mobileRegressionDays: 0,
+  primeIntegrationDays: 0,
+  qaDays: 0,
+  sharedCode: "",
+  risk: "medium",
+  maintenanceImpact: "",
+  notes: "",
 });
 
 export const initialAssessment = (): AssessmentState => ({
@@ -21,6 +32,16 @@ export const initialAssessment = (): AssessmentState => ({
     assessmentDate: new Date().toISOString().slice(0, 10),
   },
   responses: Object.fromEntries(questions.map((q) => [q.id, emptyResponse()])),
+  engineAssessment: {
+    strategy: "",
+    networkingFramework: "",
+    stateUpdateModel: "",
+    replaceReason: "",
+    reusableComponents: "",
+    migrationPlan: "",
+    sharedCore: emptyEngineOption(),
+    separatePrime: emptyEngineOption(),
+  },
   plan: planTemplate.map((item) => ({ ...item })),
   status: "draft",
   checks: CONFIRMATIONS.map(() => false),
@@ -34,12 +55,26 @@ export function hydrateAssessment(saved: Partial<AssessmentState>): AssessmentSt
     responses[id] = { ...emptyResponse(), ...r };
   });
   const checks = base.checks.map((_, i) => Boolean(saved.checks?.[i]));
+  const savedPlanById = new Map((saved.plan ?? []).map((item) => [item.id, item]));
+  const plan = base.plan.map((item) => ({ ...item, ...savedPlanById.get(item.id) }));
   return {
     ...base,
     ...saved,
     gameInfo: { ...base.gameInfo, ...saved.gameInfo },
     responses,
-    plan: saved.plan?.length ? saved.plan : base.plan,
+    engineAssessment: {
+      ...base.engineAssessment,
+      ...saved.engineAssessment,
+      sharedCore: {
+        ...base.engineAssessment.sharedCore,
+        ...saved.engineAssessment?.sharedCore,
+      },
+      separatePrime: {
+        ...base.engineAssessment.separatePrime,
+        ...saved.engineAssessment?.separatePrime,
+      },
+    },
+    plan,
     checks,
   };
 }
@@ -156,6 +191,45 @@ export function deriveFindings(state: AssessmentState) {
 
 export function syncPlanFromAssessment(state: AssessmentState): Workstream[] {
   return state.plan.map((workstream) => {
+    if (workstream.id === "multiplayer-engine-2" && state.engineAssessment.strategy) {
+      const strategy = state.engineAssessment.strategy;
+      const classification: Classification =
+        strategy === "reuse" ? "reuse" :
+        strategy === "replace" ? "rewrite" :
+        "modify";
+      const selectedEstimate =
+        strategy === "replace"
+          ? state.engineAssessment.separatePrime
+          : state.engineAssessment.sharedCore;
+      const dependencies = [
+        workstream.dependencies,
+        state.engineAssessment.networkingFramework.trim()
+          ? `Networking framework: ${state.engineAssessment.networkingFramework.trim()}`
+          : "",
+        state.engineAssessment.stateUpdateModel.trim()
+          ? `State/update model: ${state.engineAssessment.stateUpdateModel.trim()}`
+          : "",
+      ].filter(Boolean).join("\n");
+
+      return {
+        ...workstream,
+        classification,
+        whyChange:
+          workstream.whyChange ||
+          (strategy === "replace"
+            ? state.engineAssessment.replaceReason
+            : "Evolve the existing multiplayer architecture so mobile PvP and Prime can share a player-agnostic match core while keeping platform-specific input, session and transport concerns behind adapters."),
+        proposedImplementation:
+          workstream.proposedImplementation || state.engineAssessment.migrationPlan,
+        reusedComponents:
+          state.engineAssessment.reusableComponents.trim() || workstream.reusedComponents,
+        personDays:
+          workstream.personDays || engineOptionTotal(selectedEstimate),
+        dependencies,
+        risk: selectedEstimate.risk,
+      };
+    }
+
     const related = questions.filter((q) => q.workstream === workstream.id);
     const classes = related
       .map((q) => state.responses[q.id]?.classification)
@@ -183,4 +257,38 @@ export function syncPlanFromAssessment(state: AssessmentState): Workstream[] {
       personDays: workstream.personDays || effort,
     };
   });
+}
+
+
+export function engineOptionTotal(option: EngineOptionEstimate) {
+  return (
+    (Number(option.coreOrBuildDays) || 0) +
+    (Number(option.mobileRegressionDays) || 0) +
+    (Number(option.primeIntegrationDays) || 0) +
+    (Number(option.qaDays) || 0)
+  );
+}
+
+export function engineAssessmentIssues(state: AssessmentState) {
+  const engine = state.engineAssessment;
+  const issues: string[] = [];
+
+  if (!engine.strategy) issues.push("Select Reuse, Extend, Refactor or Replace for the existing multiplayer engine.");
+  if (!engine.networkingFramework.trim()) issues.push("Document the current networking framework.");
+  if (!engine.stateUpdateModel.trim()) issues.push("Document the current state/update model.");
+  if (engineOptionTotal(engine.sharedCore) <= 0) issues.push("Estimate the Shared Engine 2.0 path.");
+  if (engineOptionTotal(engine.separatePrime) <= 0) issues.push("Estimate the Separate Prime Engine path.");
+  if (!engine.sharedCore.maintenanceImpact.trim()) issues.push("Describe ongoing maintenance for the Shared Engine 2.0 path.");
+  if (!engine.separatePrime.maintenanceImpact.trim()) issues.push("Describe ongoing maintenance for the Separate Prime Engine path.");
+
+  if (engine.strategy === "replace") {
+    if (!engine.replaceReason.trim()) {
+      issues.push("A Replace decision requires a concrete technical reason.");
+    }
+    if (!engine.reusableComponents.trim()) {
+      issues.push("A Replace decision must still identify reusable components.");
+    }
+  }
+
+  return issues;
 }

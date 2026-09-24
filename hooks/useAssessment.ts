@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { hydrateAssessment, initialAssessment, syncPlanFromAssessment } from "@/lib/assessment";
-import { AssessmentState, GameInfo, QuestionResponse, Workstream } from "@/lib/types";
+import { AssessmentState, EngineOptionEstimate, GameInfo, MultiplayerEngineAssessment, QuestionResponse, Workstream } from "@/lib/types";
 
 const STORAGE_KEY = "gamesroomz-prime-assessment-v1";
 const SAVE_DELAY_MS = 300;
@@ -52,6 +52,23 @@ export function useAssessment() {
     }));
   }, []);
 
+  const updateEngineAssessment = useCallback((patch: Partial<MultiplayerEngineAssessment>) => {
+    setState((s) => ({
+      ...s,
+      engineAssessment: { ...s.engineAssessment, ...patch },
+    }));
+  }, []);
+
+  const updateEngineOption = useCallback((option: "sharedCore" | "separatePrime", patch: Partial<EngineOptionEstimate>) => {
+    setState((s) => ({
+      ...s,
+      engineAssessment: {
+        ...s.engineAssessment,
+        [option]: { ...s.engineAssessment[option], ...patch },
+      },
+    }));
+  }, []);
+
   const updatePlan = useCallback((id: string, patch: Partial<Workstream>) => {
     setState((s) => ({
       ...s,
@@ -84,7 +101,20 @@ export function useAssessment() {
     setState(initialAssessment());
   }, []);
 
-  return { state, loaded, savedAt, updateGameInfo, updateResponse, updatePlan, setStatus, toggleCheck, syncPlan, reset };
+  return {
+    state,
+    loaded,
+    savedAt,
+    updateGameInfo,
+    updateResponse,
+    updateEngineAssessment,
+    updateEngineOption,
+    updatePlan,
+    setStatus,
+    toggleCheck,
+    syncPlan,
+    reset,
+  };
 }
 
 export type AssessmentApi = ReturnType<typeof useAssessment>;

@@ -22,6 +22,19 @@ export const questions: Question[] = [
   { id:"pvp-controller", section:"PvP Architecture", prompt:"Can the current player-controller architecture support P1 and P2 without a major rewrite?", weight:5, workstream:"player-controller" },
   { id:"pvp-server", section:"PvP Architecture", prompt:"Can same-table Prime gameplay run locally without sending every move through the existing PvP server?", weight:3, workstream:"networking" },
 
+  { id:"engine-framework", section:"Multiplayer Engine 2.0", prompt:"Is the current multiplayer/networking framework identified and documented?", helper:"In the explanation, name the framework (for example Photon, Mirror, Netcode for GameObjects, custom networking, or other) and version if known.", weight:3, workstream:"multiplayer-engine-2" },
+  { id:"engine-player-assumptions", section:"Multiplayer Engine 2.0", prompt:"Can the current one-player-per-device / LocalPlayer-RemotePlayer assumptions be removed without replacing the whole game core?", helper:"Identify where LocalPlayer, RemotePlayer, MyInput, Opponent, ownership or similar assumptions are embedded.", weight:5, workstream:"multiplayer-engine-2" },
+  { id:"engine-network-coupling", section:"Multiplayer Engine 2.0", prompt:"Can gameplay logic be separated from NetworkBehaviour/RPC/synced-variable or equivalent networking components?", helper:"Direct coupling between game rules and networking is a key factor in whether refactoring is practical.", weight:5, workstream:"multiplayer-engine-2" },
+  { id:"engine-state-independent", section:"Multiplayer Engine 2.0", prompt:"Can match rules and game state operate independently from the network transport layer?", helper:"The target is a player-agnostic match core that does not care whether another player is local or remote.", weight:5, workstream:"multiplayer-engine-2" },
+  { id:"engine-latency-model", section:"Multiplayer Engine 2.0", prompt:"Can mobile latency handling remain outside the shared match core?", helper:"Explain whether prediction, rollback, reconciliation, authoritative state sync or other latency techniques affect the structure of game-state updates.", weight:4, workstream:"multiplayer-engine-2" },
+  { id:"engine-board-coupling", section:"Multiplayer Engine 2.0", prompt:"Are the two Bubble Shooter boards largely independent and connected mainly through attack, score or result events?", helper:"Loosely coupled boards are usually easier to support through one shared core for both mobile and Prime.", weight:4, workstream:"multiplayer-engine-2" },
+  { id:"engine-player-model", section:"Multiplayer Engine 2.0", prompt:"Can the player model be generalized to Players[] with PlayerId, SeatId, InputSource and PlayerState?", helper:"Assess whether the engine can represent players independently of where their input or network connection comes from.", weight:5, workstream:"multiplayer-engine-2" },
+  { id:"engine-input-abstraction", section:"Multiplayer Engine 2.0", prompt:"Can player input be abstracted from player and game-state logic?", helper:"Mobile touch and Prime P1/P2 touch zones should ideally feed the same player-facing game logic through different input providers.", weight:4, workstream:"multiplayer-engine-2" },
+  { id:"engine-optional-transport", section:"Multiplayer Engine 2.0", prompt:"Can networking be optional so Prime same-device multiplayer runs directly in-process?", helper:"Prime should not be forced to simulate network traffic if both players are already in the same Unity instance.", weight:4, workstream:"multiplayer-engine-2" },
+  { id:"engine-local-host", section:"Multiplayer Engine 2.0", prompt:"Does the current networking framework provide a practical multiple-local-player or local-host path worth evaluating?", helper:"If available, explain whether this could be a lower-effort transitional approach and its limitations.", weight:2, workstream:"multiplayer-engine-2" },
+  { id:"engine-mobile-regression", section:"Multiplayer Engine 2.0", prompt:"Can existing mobile PvP continue on the refactored shared core without changing player-facing behaviour?", helper:"State the regression risk and the mobile test coverage needed before Prime support is added.", weight:5, workstream:"multiplayer-engine-2" },
+  { id:"engine-incremental", section:"Multiplayer Engine 2.0", prompt:"Can the Engine 2.0 migration be delivered incrementally rather than as a big-bang replacement?", helper:"Preferred sequence: baseline mobile behaviour → separate game state from networking → generalize players → restore/verify mobile → add Prime adapters → Prime hardware QA.", weight:4, workstream:"multiplayer-engine-2" },
+
   { id:"touch-multi", section:"Multi-Touch & Input", prompt:"Does the existing game already support simultaneous multi-touch input?", weight:4, workstream:"multi-touch" },
   { id:"touch-route", section:"Multi-Touch & Input", prompt:"Can touches be reliably assigned to P1 and P2 gameplay zones?", weight:5, workstream:"multi-touch" },
   { id:"touch-simultaneous", section:"Multi-Touch & Input", prompt:"Can both players aim and shoot at exactly the same time?", weight:4, workstream:"multi-touch" },
@@ -88,11 +101,21 @@ export const planTemplate: Workstream[] = [
     id:"multiplayer-architecture", title:"Shared-Device Multiplayer Architecture",
     currentImplementation:"Online mobile PvP: typically one local player per device and one remote opponent.",
     primeRequirement:"Two players play simultaneously inside one Unity instance on one Prime tabletop device.",
-    classification:"rewrite", whyChange:"", proposedImplementation:"",
+    classification:"", whyChange:"", proposedImplementation:"",
     reusedComponents:"Existing battle rules and game-state logic where separable from networking.",
     changedComponents:"Local/remote assumptions, player ownership, game-state orchestration and match lifecycle.",
     deliverable:"P1 and P2 can participate in the same local match instance.",
     personDays:0, dependencies:"Player controller, multi-touch and networking decisions.", risk:"high", scopeType:"mandatory"
+  },
+  {
+    id:"multiplayer-engine-2", title:"Multiplayer Engine 2.0 Architecture",
+    currentImplementation:"Existing mobile PvP engine is designed around mobile devices and must be assessed for networking, player-model, input and state-management coupling.",
+    primeRequirement:"Prefer one player-agnostic multiplayer core supporting both existing mobile PvP and Prime shared-device multiplayer, unless technical evidence shows that a separate Prime engine is the more appropriate path.",
+    classification:"", whyChange:"", proposedImplementation:"",
+    reusedComponents:"Document reusable match rules, game state, board logic, scoring, attacks, results and networking abstractions.",
+    changedComponents:"Document LocalPlayer/RemotePlayer assumptions, networking-framework coupling, player ownership, transport, input sources and any mobile-specific state-update logic that must change.",
+    deliverable:"Validated architecture decision with a phased migration plan, mobile regression protection, Prime adapter design, and implementation effort for the selected path.",
+    personDays:0, dependencies:"Current networking framework/code review, mobile regression baseline, Prime input model and Gamesroomz session contract.", risk:"high", scopeType:"mandatory"
   },
   {
     id:"player-controller", title:"Player Controller",

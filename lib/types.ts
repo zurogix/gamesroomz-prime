@@ -2,6 +2,8 @@ export type Answer = "yes" | "no" | "unsure" | "";
 export type Classification = "reuse" | "modify" | "rewrite" | "new" | "";
 export type Risk = "low" | "medium" | "high";
 export type ScopeType = "mandatory" | "enhancement";
+export type EngineStrategy = "reuse" | "extend" | "refactor" | "replace" | "";
+export type SharedCodeLevel = "high" | "medium" | "low" | "";
 
 export type Question = {
   id: string;
@@ -17,6 +19,28 @@ export type QuestionResponse = {
   classification: Classification;
   explanation: string;
   effortDays: number;
+};
+
+export type EngineOptionEstimate = {
+  coreOrBuildDays: number;
+  mobileRegressionDays: number;
+  primeIntegrationDays: number;
+  qaDays: number;
+  sharedCode: SharedCodeLevel;
+  risk: Risk;
+  maintenanceImpact: string;
+  notes: string;
+};
+
+export type MultiplayerEngineAssessment = {
+  strategy: EngineStrategy;
+  networkingFramework: string;
+  stateUpdateModel: string;
+  replaceReason: string;
+  reusableComponents: string;
+  migrationPlan: string;
+  sharedCore: EngineOptionEstimate;
+  separatePrime: EngineOptionEstimate;
 };
 
 export type Workstream = {
@@ -50,6 +74,7 @@ export type GameInfo = {
 export type AssessmentState = {
   gameInfo: GameInfo;
   responses: Record<string, QuestionResponse>;
+  engineAssessment: MultiplayerEngineAssessment;
   plan: Workstream[];
   status: "draft" | "assessment-complete" | "planning" | "submitted" | "changes-requested" | "approved";
   checks: boolean[];
