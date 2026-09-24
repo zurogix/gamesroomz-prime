@@ -191,6 +191,45 @@ export function deriveFindings(state: AssessmentState) {
 
 export function syncPlanFromAssessment(state: AssessmentState): Workstream[] {
   return state.plan.map((workstream) => {
+    if (workstream.id === "multiplayer-engine-2" && state.engineAssessment.strategy) {
+      const strategy = state.engineAssessment.strategy;
+      const classification: Classification =
+        strategy === "reuse" ? "reuse" :
+        strategy === "replace" ? "rewrite" :
+        "modify";
+      const selectedEstimate =
+        strategy === "replace"
+          ? state.engineAssessment.separatePrime
+          : state.engineAssessment.sharedCore;
+      const dependencies = [
+        workstream.dependencies,
+        state.engineAssessment.networkingFramework.trim()
+          ? `Networking framework: ${state.engineAssessment.networkingFramework.trim()}`
+          : "",
+        state.engineAssessment.stateUpdateModel.trim()
+          ? `State/update model: ${state.engineAssessment.stateUpdateModel.trim()}`
+          : "",
+      ].filter(Boolean).join("\n");
+
+      return {
+        ...workstream,
+        classification,
+        whyChange:
+          workstream.whyChange ||
+          (strategy === "replace"
+            ? state.engineAssessment.replaceReason
+            : "Evolve the existing multiplayer architecture so mobile PvP and Prime can share a player-agnostic match core while keeping platform-specific input, session and transport concerns behind adapters."),
+        proposedImplementation:
+          workstream.proposedImplementation || state.engineAssessment.migrationPlan,
+        reusedComponents:
+          state.engineAssessment.reusableComponents.trim() || workstream.reusedComponents,
+        personDays:
+          workstream.personDays || engineOptionTotal(selectedEstimate),
+        dependencies,
+        risk: selectedEstimate.risk,
+      };
+    }
+
     const related = questions.filter((q) => q.workstream === workstream.id);
     const classes = related
       .map((q) => state.responses[q.id]?.classification)
