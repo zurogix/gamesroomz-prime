@@ -11,6 +11,7 @@ export const ASSESSMENT_SECTIONS = [
   "Unity & Android",
   "Core Gameplay",
   "PvP Architecture",
+  "Multiplayer Engine 2.0",
   "Multi-Touch & Input",
   "Prime 16:9 UI",
   "Gamesroomz Integration",
@@ -53,6 +54,7 @@ export const CONFIRMATIONS = [
   "All items classified as Rewrite/New include a technical reason and implementation approach.",
   "Optional enhancements are separated from mandatory Prime conversion work.",
   "Person-day estimates include implementation and developer testing assumptions.",
+  "The Multiplayer Engine 2.0 assessment compares a shared-core path with a separate Prime engine and documents the technical evidence behind the selected strategy.",
 ];
 
 export const COMPLEXITY_BANDS = ["Minor", "Moderate", "Major", "Rebuild"];
