@@ -1,10 +1,14 @@
-import { Question, Workstream } from "./types";
+import { Category, Question, Workstream } from "./types";
 
-export const questions: Question[] = [
+const PLATFORM_SECTIONS = ["Gamesroomz Integration", "Prime Hardware & QA"];
+const PLATFORM_WORKSTREAMS = ["gamesroomz-integration", "score-results", "launcher-lifecycle", "qa"];
+const ENGINE_EXCLUSION = "Excludes core engine refactoring already estimated in Multiplayer Engine 2.0.";
+
+const questionData: Omit<Question, "category">[] = [
   { id:"health-open", section:"Project Health", prompt:"Can the existing Unity project be opened successfully today?", weight:1, workstream:"technical-investigation" },
   { id:"health-build", section:"Project Health", prompt:"Can the current Android version be built successfully?", weight:2, workstream:"android-modernization" },
   { id:"health-assets", section:"Project Health", prompt:"Are all required source assets, plugins and libraries available?", weight:1, workstream:"technical-investigation" },
-  { id:"health-obsolete", section:"Project Health", prompt:"Are there obsolete or unsupported Unity plugins in the project?", helper:"If yes, identify which plugins and whether they can be removed or must be replaced.", weight:2, workstream:"unity-modernization" },
+  { id:"health-obsolete", section:"Project Health", prompt:"Are all Unity plugins current and supported?", helper:"If no, identify which plugins and whether they can be removed or must be replaced.", weight:2, workstream:"unity-modernization" },
 
   { id:"unity-upgrade", section:"Unity & Android", prompt:"Can the project be upgraded to the agreed Prime Unity version without a major gameplay rewrite?", weight:3, workstream:"unity-modernization" },
   { id:"android-upgrade", section:"Unity & Android", prompt:"Can the Android SDK / Gradle / JDK toolchain be upgraded without replacing major native integrations?", weight:3, workstream:"android-modernization" },
@@ -16,9 +20,9 @@ export const questions: Question[] = [
   { id:"gameplay-score", section:"Core Gameplay", prompt:"Can the existing scoring, win/loss and attack rules be reused?", weight:2, workstream:"core-gameplay" },
   { id:"gameplay-assets", section:"Core Gameplay", prompt:"Can the existing artwork, animations, audio, effects and level content be reused at Prime resolution?", weight:1, workstream:"core-gameplay" },
 
-  { id:"pvp-device", section:"PvP Architecture", prompt:"Does the current PvP architecture assume one local player per physical device?", helper:"The current mobile model is expected to be one local player plus a remote opponent.", weight:4, workstream:"multiplayer-architecture" },
-  { id:"pvp-two-local", section:"PvP Architecture", prompt:"Can two local players currently exist inside one Unity game instance?", weight:5, workstream:"multiplayer-architecture" },
-  { id:"pvp-state", section:"PvP Architecture", prompt:"Can the existing shared game-state / battle rules support both Prime players locally?", weight:4, workstream:"multiplayer-architecture" },
+  { id:"pvp-device", section:"PvP Architecture", prompt:"Can the current PvP architecture support more than one local player per device?", helper:"The current mobile model is expected to be one local player plus a remote opponent.", weight:4, workstream:"multiplayer-engine-2" },
+  { id:"pvp-two-local", section:"PvP Architecture", prompt:"Can two local players currently exist inside one Unity game instance?", weight:5, workstream:"multiplayer-engine-2" },
+  { id:"pvp-state", section:"PvP Architecture", prompt:"Can the existing shared game-state / battle rules support both Prime players locally?", weight:4, workstream:"multiplayer-engine-2" },
   { id:"pvp-controller", section:"PvP Architecture", prompt:"Can the current player-controller architecture support P1 and P2 without a major rewrite?", weight:5, workstream:"player-controller" },
   { id:"pvp-server", section:"PvP Architecture", prompt:"Can same-table Prime gameplay run locally without sending every move through the existing PvP server?", weight:3, workstream:"networking" },
 
@@ -56,12 +60,12 @@ export const questions: Question[] = [
   { id:"qa-network", section:"Prime Hardware & QA", prompt:"Does the current game handle network interruption without corrupting a match or result?", weight:2, workstream:"qa" },
 ];
 
-export const planTemplate: Workstream[] = [
+const planData: Omit<Workstream, "category">[] = [
   {
     id:"technical-investigation", title:"Technical Investigation",
     currentImplementation:"Legacy Unity mobile project with complete source code.",
     primeRequirement:"Establish a verified baseline of project health, dependencies and build status before conversion.",
-    classification:"modify", whyChange:"", proposedImplementation:"",
+    classification:"", whyChange:"", proposedImplementation:"",
     reusedComponents:"Existing source repository, game assets and documentation.",
     changedComponents:"Audit only; no production behaviour should change in this workstream.",
     deliverable:"Technical baseline report and verified build/open status.",
@@ -71,7 +75,7 @@ export const planTemplate: Workstream[] = [
     id:"unity-modernization", title:"Unity Modernization",
     currentImplementation:"Existing game uses a legacy Unity version.",
     primeRequirement:"Run on one agreed, supported Unity version for Prime and future Gamesroomz SDK maintenance.",
-    classification:"modify", whyChange:"", proposedImplementation:"",
+    classification:"", whyChange:"", proposedImplementation:"",
     reusedComponents:"Scenes, prefabs, C# game logic and assets where compatible.",
     changedComponents:"Deprecated Unity APIs, packages, plugins and project settings as required.",
     deliverable:"Project opens, compiles and runs cleanly on the agreed Prime Unity version.",
@@ -81,7 +85,7 @@ export const planTemplate: Workstream[] = [
     id:"android-modernization", title:"Android Toolchain Modernization",
     currentImplementation:"Mobile game uses an older Android SDK/toolchain.",
     primeRequirement:"Produce a stable Android build compatible with the Prime OS and hardware baseline.",
-    classification:"modify", whyChange:"", proposedImplementation:"",
+    classification:"", whyChange:"", proposedImplementation:"",
     reusedComponents:"Existing Android-compatible game code where possible.",
     changedComponents:"SDK/API level, Gradle, JDK, manifests and native plugins as required.",
     deliverable:"Installable Prime-compatible Android build.",
@@ -98,16 +102,6 @@ export const planTemplate: Workstream[] = [
     personDays:0, dependencies:"Multiplayer architecture decisions.", risk:"low", scopeType:"mandatory"
   },
   {
-    id:"multiplayer-architecture", title:"Shared-Device Multiplayer Architecture",
-    currentImplementation:"Online mobile PvP: typically one local player per device and one remote opponent.",
-    primeRequirement:"Two players play simultaneously inside one Unity instance on one Prime tabletop device.",
-    classification:"", whyChange:"", proposedImplementation:"",
-    reusedComponents:"Existing battle rules and game-state logic where separable from networking.",
-    changedComponents:"Local/remote assumptions, player ownership, game-state orchestration and match lifecycle.",
-    deliverable:"P1 and P2 can participate in the same local match instance.",
-    personDays:0, dependencies:"Player controller, multi-touch and networking decisions.", risk:"high", scopeType:"mandatory"
-  },
-  {
     id:"multiplayer-engine-2", title:"Multiplayer Engine 2.0 Architecture",
     currentImplementation:"Existing mobile PvP engine is designed around mobile devices and must be assessed for networking, player-model, input and state-management coupling.",
     primeRequirement:"Prefer one player-agnostic multiplayer core supporting both existing mobile PvP and Prime shared-device multiplayer, unless technical evidence shows that a separate Prime engine is the more appropriate path.",
@@ -121,11 +115,11 @@ export const planTemplate: Workstream[] = [
     id:"player-controller", title:"Player Controller",
     currentImplementation:"Current controller is designed around the mobile local-player model.",
     primeRequirement:"Independent P1 and P2 controllers inside the same game instance.",
-    classification:"modify", whyChange:"", proposedImplementation:"",
+    classification:"", whyChange:"", proposedImplementation:"",
     reusedComponents:"Existing shooter-control logic where it can be parameterised by player.",
-    changedComponents:"Player ownership, state, score and per-player references.",
+    changedComponents:`Player ownership, state, score and per-player references.\n${ENGINE_EXCLUSION}`,
     deliverable:"Two independent player controllers with no cross-control leakage.",
-    personDays:0, dependencies:"Shared-device multiplayer architecture.", risk:"high", scopeType:"mandatory"
+    personDays:0, dependencies:"Multiplayer Engine 2.0 architecture decision.", risk:"high", scopeType:"mandatory"
   },
   {
     id:"multi-touch", title:"Multi-Touch Input",
@@ -133,7 +127,7 @@ export const planTemplate: Workstream[] = [
     primeRequirement:"P1 and P2 must aim/shoot simultaneously on separate tabletop regions.",
     classification:"new", whyChange:"", proposedImplementation:"",
     reusedComponents:"Existing touch gestures and aiming behaviour where appropriate.",
-    changedComponents:"Input routing, touch ownership, player zones and simultaneous gesture handling.",
+    changedComponents:`Input routing, touch ownership, player zones and simultaneous gesture handling.\n${ENGINE_EXCLUSION}`,
     deliverable:"Reliable simultaneous multi-touch with independent P1/P2 input.",
     personDays:0, dependencies:"Final Prime screen layout and hardware touch behaviour.", risk:"high", scopeType:"mandatory"
   },
@@ -141,7 +135,7 @@ export const planTemplate: Workstream[] = [
     id:"prime-ui", title:"Prime 16:9 Tabletop UI",
     currentImplementation:"Mobile portrait UI designed for one player viewing one device.",
     primeRequirement:"16:9 tabletop layout with two vertical P1/P2 playfields; opposite player UI may require 180° orientation.",
-    classification:"modify", whyChange:"", proposedImplementation:"",
+    classification:"", whyChange:"", proposedImplementation:"",
     reusedComponents:"Existing gameplay visuals and UI assets where resolution/layout permits.",
     changedComponents:"Canvas layout, camera framing, menus, results, player labels and shared battle/status area.",
     deliverable:"Readable and usable two-player Prime tabletop interface.",
@@ -151,9 +145,9 @@ export const planTemplate: Workstream[] = [
     id:"networking", title:"Networking",
     currentImplementation:"Existing online PvP synchronizes players across separate mobile devices.",
     primeRequirement:"Same-table gameplay should run locally where practical; backend remains responsible for platform/session/result needs.",
-    classification:"modify", whyChange:"", proposedImplementation:"",
+    classification:"", whyChange:"", proposedImplementation:"",
     reusedComponents:"Online PvP components needed for future table-vs-table play may be retained separately.",
-    changedComponents:"Remove unnecessary same-table move synchronization and decouple local match logic from remote-player assumptions.",
+    changedComponents:`Remove unnecessary same-table move synchronization and decouple local match logic from remote-player assumptions.\n${ENGINE_EXCLUSION}`,
     deliverable:"Stable local Prime match with only required backend communications.",
     personDays:0, dependencies:"Gamesroomz platform contract and future online PvP scope.", risk:"medium", scopeType:"mandatory"
   },
@@ -171,7 +165,7 @@ export const planTemplate: Workstream[] = [
     id:"score-results", title:"Score & Result Integration",
     currentImplementation:"Existing game already supports score upload.",
     primeRequirement:"Submit P1/P2 result, winner and agreed game metrics through Gamesroomz.",
-    classification:"modify", whyChange:"", proposedImplementation:"",
+    classification:"", whyChange:"", proposedImplementation:"",
     reusedComponents:"Existing score calculation and result-generation logic.",
     changedComponents:"Transport/API layer and player identity mapping.",
     deliverable:"Verified result reaches Gamesroomz for both players.",
@@ -198,3 +192,15 @@ export const planTemplate: Workstream[] = [
     personDays:0, dependencies:"Access to representative Prime hardware.", risk:"medium", scopeType:"mandatory"
   }
 ];
+
+const categoryFor = (platform: boolean): Category => (platform ? "platform" : "game");
+
+export const questions: Question[] = questionData.map((q) => ({
+  ...q,
+  category: categoryFor(PLATFORM_SECTIONS.includes(q.section)),
+}));
+
+export const planTemplate: Workstream[] = planData.map((w) => ({
+  ...w,
+  category: categoryFor(PLATFORM_WORKSTREAMS.includes(w.id)),
+}));

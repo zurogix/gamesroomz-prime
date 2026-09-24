@@ -1,6 +1,7 @@
 import { forwardRef } from "react";
 import { ANSWERS, CLASS_HELP, CLASS_LABEL } from "@/lib/sections";
 import { Answer, Question, QuestionResponse } from "@/lib/types";
+import HelpMeChoose from "./HelpMeChoose";
 import ImpactButtons from "./ImpactButtons";
 
 type Props = {
@@ -46,22 +47,12 @@ const QuestionRow = forwardRef<HTMLElement, Props>(function QuestionRow(
           </div>
         </div>
 
-        <div className="ctl">
+        <div className="ctl ctl-impact">
           <span className="ctl-title" id={`il-${id}`}>Impact</span>
-          <ImpactButtons value={response.classification} labelledBy={`il-${id}`} onChange={(classification) => onChange({ classification })} />
-        </div>
-
-        <div className="ctl ctl-days">
-          <label className="ctl-title" htmlFor={`d-${id}`}>Person-days</label>
-          <input
-            type="number"
-            id={`d-${id}`}
-            min="0"
-            step="0.5"
-            placeholder="0"
-            value={response.effortDays || ""}
-            onChange={(e) => onChange({ effortDays: Number(e.target.value) || 0 })}
-          />
+          <div className="impact-row">
+            <ImpactButtons value={response.classification} labelledBy={`il-${id}`} onChange={(classification) => onChange({ classification })} />
+            <HelpMeChoose />
+          </div>
         </div>
       </div>
 

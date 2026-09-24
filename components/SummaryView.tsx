@@ -3,7 +3,6 @@ import {
   assessmentCoverage,
   calculateComplexity,
   deriveFindings,
-  engineOptionTotal,
   planCoverage,
   totalPlanDays,
 } from "@/lib/assessment";
@@ -11,6 +10,7 @@ import { CLASSES, CLASS_LABEL, CONFIRMATIONS, formatDays } from "@/lib/sections"
 import { AssessmentState } from "@/lib/types";
 import ApprovalTimeline from "./ApprovalTimeline";
 import EffortChart from "./EffortChart";
+import EngineSummaryCard from "./EngineSummaryCard";
 import PageHeader from "./PageHeader";
 import RiskMatrix from "./RiskMatrix";
 
@@ -56,49 +56,7 @@ export default function SummaryView({ state, savedAt, onOpenWorkstream, onStatus
           <div className="kpi"><span className="label">High risk</span><b className="num">{highRisk.length}</b><small>{highRisk.length ? highRisk.map((w) => w.title).join(", ") : "none"}</small></div>
         </div>
 
-        <section className="card engine-summary-card">
-          <div className="engine-summary-head">
-            <div>
-              <span className="label">Multiplayer architecture decision</span>
-              <h2>Engine 2.0 vs separate Prime engine</h2>
-            </div>
-            <span className="engine-strategy-badge">
-              {state.engineAssessment.strategy
-                ? state.engineAssessment.strategy[0].toUpperCase() + state.engineAssessment.strategy.slice(1)
-                : "Not classified"}
-            </span>
-          </div>
-          <div className="engine-summary-grid">
-            <div>
-              <span className="label">Shared Multiplayer Engine 2.0</span>
-              <b className="num">{formatDays(engineOptionTotal(state.engineAssessment.sharedCore))} d</b>
-              <small>
-                Shared code: {state.engineAssessment.sharedCore.sharedCode || "—"} · Risk: {state.engineAssessment.sharedCore.risk}
-              </small>
-              <p>{state.engineAssessment.sharedCore.maintenanceImpact || "Maintenance impact not documented yet."}</p>
-            </div>
-            <div>
-              <span className="label">Separate Prime Multiplayer Engine</span>
-              <b className="num">{formatDays(engineOptionTotal(state.engineAssessment.separatePrime))} d</b>
-              <small>
-                Shared code: {state.engineAssessment.separatePrime.sharedCode || "—"} · Risk: {state.engineAssessment.separatePrime.risk}
-              </small>
-              <p>{state.engineAssessment.separatePrime.maintenanceImpact || "Maintenance impact not documented yet."}</p>
-            </div>
-          </div>
-          <div className="engine-summary-meta">
-            <span><b>Framework:</b> {state.engineAssessment.networkingFramework || "Not documented"}</span>
-            <span><b>State/update model:</b> {state.engineAssessment.stateUpdateModel || "Not documented"}</span>
-          </div>
-          {state.engineAssessment.strategy === "replace" && (
-            <div className="engine-summary-replace">
-              <b>Replace justification</b>
-              <p>{state.engineAssessment.replaceReason || "Required technical justification is missing."}</p>
-              <b>Reusable components</b>
-              <p>{state.engineAssessment.reusableComponents || "Reusable components have not been identified."}</p>
-            </div>
-          )}
-        </section>
+        <EngineSummaryCard engine={state.engineAssessment} />
 
         <EffortChart plan={state.plan} />
 

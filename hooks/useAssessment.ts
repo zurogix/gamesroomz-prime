@@ -1,29 +1,28 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { hydrateAssessment, initialAssessment, syncPlanFromAssessment } from "@/lib/assessment";
+import { applyEngineEstimate, initialAssessment, syncPlanFromAssessment } from "@/lib/assessment";
+import { LEGACY_STORAGE_KEY, readDraft, STORAGE_KEY } from "@/lib/draftStorage";
 import { AssessmentState, EngineOptionEstimate, GameInfo, MultiplayerEngineAssessment, QuestionResponse, Workstream } from "@/lib/types";
 
-const STORAGE_KEY = "gamesroomz-prime-assessment-v1";
 const SAVE_DELAY_MS = 300;
 
-function readDraft(): AssessmentState | null {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    return saved ? hydrateAssessment(JSON.parse(saved)) : null;
-  } catch {
-    return null;
-  }
+function withEngine(s: AssessmentState, engineAssessment: MultiplayerEngineAssessment): AssessmentState {
+  return { ...s, engineAssessment, plan: applyEngineEstimate(s.plan, engineAssessment) };
 }
 
 export function useAssessment() {
   const [state, setState] = useState<AssessmentState>(() => initialAssessment());
   const [loaded, setLoaded] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
+  const [migrationNotice, setMigrationNotice] = useState(false);
 
   useEffect(() => {
-    const draft = readDraft();
-    if (draft) setState(draft);
+    const draft = readDraft(localStorage);
+    if (draft) {
+      setState(draft.state);
+      setMigrationNotice(draft.migrated);
+    }
     setLoaded(true);
   }, []);
 
@@ -53,19 +52,13 @@ export function useAssessment() {
   }, []);
 
   const updateEngineAssessment = useCallback((patch: Partial<MultiplayerEngineAssessment>) => {
-    setState((s) => ({
-      ...s,
-      engineAssessment: { ...s.engineAssessment, ...patch },
-    }));
+    setState((s) => withEngine(s, { ...s.engineAssessment, ...patch }));
   }, []);
 
   const updateEngineOption = useCallback((option: "sharedCore" | "separatePrime", patch: Partial<EngineOptionEstimate>) => {
-    setState((s) => ({
-      ...s,
-      engineAssessment: {
-        ...s.engineAssessment,
-        [option]: { ...s.engineAssessment[option], ...patch },
-      },
+    setState((s) => withEngine(s, {
+      ...s.engineAssessment,
+      [option]: { ...s.engineAssessment[option], ...patch },
     }));
   }, []);
 
@@ -92,12 +85,16 @@ export function useAssessment() {
     }));
   }, []);
 
+  const dismissMigrationNotice = useCallback(() => setMigrationNotice(false), []);
+
   const reset = useCallback(() => {
     try {
       localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(LEGACY_STORAGE_KEY);
     } catch {
       // Nothing to clear when storage is unavailable.
     }
+    setMigrationNotice(false);
     setState(initialAssessment());
   }, []);
 
@@ -105,6 +102,8 @@ export function useAssessment() {
     state,
     loaded,
     savedAt,
+    migrationNotice,
+    dismissMigrationNotice,
     updateGameInfo,
     updateResponse,
     updateEngineAssessment,

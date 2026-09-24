@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { planFieldsDone, PLAN_FIELD_COUNT } from "@/lib/assessment";
 import { formatDays } from "@/lib/sections";
-import { Workstream } from "@/lib/types";
+import { MultiplayerEngineAssessment, Workstream } from "@/lib/types";
 import ClassificationChip from "./ClassificationChip";
 import PlanDrawerFields from "./PlanDrawerFields";
 import RiskLabel from "./RiskLabel";
@@ -12,6 +12,7 @@ export type DrawerTab = "overview" | "impl" | "comp" | "effort";
 
 type Props = {
   plan: Workstream[];
+  engine: MultiplayerEngineAssessment;
   openId: string;
   onChange: (id: string, patch: Partial<Workstream>) => void;
   onSelect: (id: string) => void;
@@ -25,7 +26,7 @@ const TABS: { key: DrawerTab; label: string }[] = [
   { key: "effort", label: "Effort & risk" },
 ];
 
-export default function PlanDrawer({ plan, openId, onChange, onSelect, onClose }: Props) {
+export default function PlanDrawer({ plan, engine, openId, onChange, onSelect, onClose }: Props) {
   const [tab, setTab] = useState<DrawerTab>("overview");
   const index = plan.findIndex((w) => w.id === openId);
   const w = plan[index];
@@ -65,7 +66,7 @@ export default function PlanDrawer({ plan, openId, onChange, onSelect, onClose }
           ))}
         </div>
         <div className="drawer-body">
-          <PlanDrawerFields workstream={w} tab={tab} onChange={(patch) => onChange(w.id, patch)} />
+          <PlanDrawerFields workstream={w} engine={engine} tab={tab} onChange={(patch) => onChange(w.id, patch)} />
         </div>
         <div className="drawer-foot">
           <button type="button" className="btn" disabled={index === 0} onClick={() => step(-1)}>← Previous</button>

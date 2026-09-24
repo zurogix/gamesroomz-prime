@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { engineAssessmentIssues, isQuestionDone } from "@/lib/assessment";
+import { engineAssessmentIssues, isQuestionDone, rewriteNeedsEvidence } from "@/lib/assessment";
 import { questions } from "@/lib/questions";
 import { ANSWERS, ASSESSMENT_SECTIONS, OVERVIEW, PLAN } from "@/lib/sections";
 import { AssessmentState, Classification, EngineOptionEstimate, MultiplayerEngineAssessment, QuestionResponse } from "@/lib/types";
@@ -21,7 +21,8 @@ type Props = {
   onContinueToPlan: () => void;
 };
 
-const IMPACT_KEYS: Record<string, Classification> = { r: "reuse", m: "modify", w: "rewrite", n: "new" };
+const ENGINE_SECTION = "Multiplayer Engine 2.0";
+const IMPACT_KEYS: Record<string, Classification> = { r: "reuse", e: "extend", f: "refactor", w: "rewrite", n: "new", x: "remove" };
 
 function isTyping(target: EventTarget | null) {
   return target instanceof HTMLElement && Boolean(target.closest("input, textarea, select, [contenteditable]"));
@@ -81,14 +82,12 @@ export default function AssessmentSection({
 
   const done = sectionQs.filter((q) => isQuestionDone(state, q)).length;
   const crumb = <>Assessment <span>·</span> Section {index + 1} of {ASSESSMENT_SECTIONS.length} <span>·</span> {done}/{sectionQs.length} answered</>;
-  const engineIssues = section === "Multiplayer Engine 2.0" ? engineAssessmentIssues(state) : [];
-  const replaceBlocked =
-    section === "Multiplayer Engine 2.0" &&
-    state.engineAssessment.strategy === "replace" &&
-    (!state.engineAssessment.replaceReason.trim() || !state.engineAssessment.reusableComponents.trim());
+  const isEngineSection = section === ENGINE_SECTION;
+  const engineIssues = isEngineSection ? engineAssessmentIssues(state.engineAssessment) : [];
+  const rewriteBlocked = isEngineSection && rewriteNeedsEvidence(state.engineAssessment);
 
   const goNext = () => {
-    if (replaceBlocked) return;
+    if (rewriteBlocked) return;
     return next === PLAN ? onContinueToPlan() : onNavigate(next);
   };
 
@@ -110,7 +109,7 @@ export default function AssessmentSection({
             />
           ))}
         </div>
-        {section === "Multiplayer Engine 2.0" && (
+        {isEngineSection && (
           <MultiplayerEnginePanel
             value={state.engineAssessment}
             issues={engineIssues}
@@ -122,12 +121,12 @@ export default function AssessmentSection({
           <div className="shortcuts" aria-hidden="true">
             <span><kbd>J</kbd><kbd>K</kbd> move</span>
             <span><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> answer</span>
-            <span><kbd>R</kbd><kbd>M</kbd><kbd>W</kbd><kbd>N</kbd> impact</span>
+            <span><kbd>R</kbd><kbd>E</kbd><kbd>F</kbd><kbd>W</kbd><kbd>N</kbd><kbd>X</kbd> impact</span>
           </div>
           <div className="pager-actions">
             <button type="button" className="btn" onClick={() => onNavigate(prev)}>← {prev}</button>
-            <button type="button" className="btn primary" disabled={replaceBlocked} onClick={goNext}>
-              {replaceBlocked ? "Document Replace evidence to continue" : `${next} →`}
+            <button type="button" className="btn primary" disabled={rewriteBlocked} onClick={goNext}>
+              {rewriteBlocked ? "Document Rewrite evidence to continue" : `${next} →`}
             </button>
           </div>
         </div>

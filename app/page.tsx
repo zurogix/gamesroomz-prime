@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import AssessmentSection from "@/components/AssessmentSection";
 import CommandPalette, { PaletteTarget } from "@/components/CommandPalette";
+import MigrationNotice from "@/components/MigrationNotice";
 import OverviewView from "@/components/OverviewView";
 import PlanDrawer from "@/components/PlanDrawer";
 import PlanView from "@/components/PlanView";
@@ -16,7 +17,7 @@ import { ASSESSMENT_SECTIONS, OVERVIEW, PLAN, SUMMARY } from "@/lib/sections";
 
 export default function HomePage() {
   const {
-    state, savedAt, updateGameInfo, updateResponse, updateEngineAssessment, updateEngineOption, updatePlan, setStatus, toggleCheck, syncPlan, reset,
+    state, savedAt, migrationNotice, dismissMigrationNotice, updateGameInfo, updateResponse, updateEngineAssessment, updateEngineOption, updatePlan, setStatus, toggleCheck, syncPlan, reset,
   } = useAssessment();
   const { theme, setTheme } = useTheme();
   const [view, setView] = useState(OVERVIEW);
@@ -121,11 +122,14 @@ export default function HomePage() {
           onTheme={setTheme}
           onReset={resetAll}
         />
-        <main className="main">{renderView()}</main>
+        <main className="main">
+          {migrationNotice && <MigrationNotice onDismiss={dismissMigrationNotice} />}
+          {renderView()}
+        </main>
         {showRail && <SummaryRail state={state} onJumpToQuestion={jumpToQuestion} onOpenWorkstream={openWorkstream} />}
       </div>
       {drawerId && (
-        <PlanDrawer plan={state.plan} openId={drawerId} onChange={updatePlan} onSelect={setDrawerId} onClose={closeDrawer} />
+        <PlanDrawer plan={state.plan} engine={state.engineAssessment} openId={drawerId} onChange={updatePlan} onSelect={setDrawerId} onClose={closeDrawer} />
       )}
       {paletteOpen && <CommandPalette plan={state.plan} onPick={pick} onClose={() => setPaletteOpen(false)} />}
     </>

@@ -13,7 +13,7 @@ type Props = {
 
 const STEPS = [
   { title: "Assess", text: "What exists today?" },
-  { title: "Classify", text: "Reuse, modify, rewrite or new?" },
+  { title: "Classify", text: "Reuse, extend, refactor, rewrite, new or remove?" },
   { title: "Plan", text: "How will Prime support be built?" },
   { title: "Estimate", text: "Person-days and risks" },
 ];

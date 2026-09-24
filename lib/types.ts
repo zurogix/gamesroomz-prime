@@ -1,8 +1,9 @@
 export type Answer = "yes" | "no" | "unsure" | "";
-export type Classification = "reuse" | "modify" | "rewrite" | "new" | "";
+export type Classification = "reuse" | "extend" | "refactor" | "rewrite" | "new" | "remove" | "";
 export type Risk = "low" | "medium" | "high";
 export type ScopeType = "mandatory" | "enhancement";
-export type EngineStrategy = "reuse" | "extend" | "refactor" | "replace" | "";
+export type Category = "game" | "platform";
+export type RecommendedPath = "shared" | "separate" | "";
 export type SharedCodeLevel = "high" | "medium" | "low" | "";
 
 export type Question = {
@@ -12,13 +13,13 @@ export type Question = {
   helper?: string;
   weight: number;
   workstream: string;
+  category: Category;
 };
 
 export type QuestionResponse = {
   answer: Answer;
   classification: Classification;
   explanation: string;
-  effortDays: number;
 };
 
 export type EngineOptionEstimate = {
@@ -33,10 +34,12 @@ export type EngineOptionEstimate = {
 };
 
 export type MultiplayerEngineAssessment = {
-  strategy: EngineStrategy;
+  engineClassification: Classification;
+  recommendedPath: RecommendedPath;
+  pathJustification: string;
   networkingFramework: string;
   stateUpdateModel: string;
-  replaceReason: string;
+  rewriteReason: string;
   reusableComponents: string;
   migrationPlan: string;
   sharedCore: EngineOptionEstimate;
@@ -46,6 +49,7 @@ export type MultiplayerEngineAssessment = {
 export type Workstream = {
   id: string;
   title: string;
+  category: Category;
   currentImplementation: string;
   primeRequirement: string;
   classification: Classification;
@@ -79,4 +83,9 @@ export type AssessmentState = {
   status: "draft" | "assessment-complete" | "planning" | "submitted" | "changes-requested" | "approved";
   checks: boolean[];
   lastSavedAt?: string;
+};
+
+/** A draft as read from storage: any part may be missing or out of date. */
+export type SavedDraft = Omit<Partial<AssessmentState>, "engineAssessment"> & {
+  engineAssessment?: Partial<MultiplayerEngineAssessment>;
 };

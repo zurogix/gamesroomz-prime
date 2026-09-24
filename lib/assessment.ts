@@ -1,23 +1,17 @@
-import { AssessmentState, Classification, EngineOptionEstimate, Question, QuestionResponse, Workstream } from "./types";
+import { AssessmentState, Classification, Question, QuestionResponse, SavedDraft, Workstream } from "./types";
 import { questions, planTemplate } from "./questions";
-import { CONFIRMATIONS, ImpactClass } from "./sections";
+import { CLASSES, CONFIRMATIONS, ImpactClass } from "./sections";
+import { emptyEngineAssessment } from "./engine";
+import { applyEngineEstimate } from "./sync";
+import { migrateClassification } from "./migrate";
+
+export { engineAssessmentIssues, engineOptionTotal, selectedEngineEstimate, rewriteNeedsEvidence } from "./engine";
+export { applyEngineEstimate, strongestClassification, syncPlanFromAssessment } from "./sync";
 
 export const emptyResponse = (): QuestionResponse => ({
   answer: "",
   classification: "",
   explanation: "",
-  effortDays: 0,
-});
-
-const emptyEngineOption = (): EngineOptionEstimate => ({
-  coreOrBuildDays: 0,
-  mobileRegressionDays: 0,
-  primeIntegrationDays: 0,
-  qaDays: 0,
-  sharedCode: "",
-  risk: "medium",
-  maintenanceImpact: "",
-  notes: "",
 });
 
 export const initialAssessment = (): AssessmentState => ({
@@ -32,59 +26,66 @@ export const initialAssessment = (): AssessmentState => ({
     assessmentDate: new Date().toISOString().slice(0, 10),
   },
   responses: Object.fromEntries(questions.map((q) => [q.id, emptyResponse()])),
-  engineAssessment: {
-    strategy: "",
-    networkingFramework: "",
-    stateUpdateModel: "",
-    replaceReason: "",
-    reusableComponents: "",
-    migrationPlan: "",
-    sharedCore: emptyEngineOption(),
-    separatePrime: emptyEngineOption(),
-  },
+  engineAssessment: emptyEngineAssessment(),
   plan: planTemplate.map((item) => ({ ...item })),
   status: "draft",
   checks: CONFIRMATIONS.map(() => false),
 });
 
-/** Fill in anything missing from a draft saved by an older version of the portal. */
-export function hydrateAssessment(saved: Partial<AssessmentState>): AssessmentState {
+function hydrateResponse(saved: Partial<QuestionResponse> | undefined): QuestionResponse {
+  return {
+    answer: saved?.answer ?? "",
+    classification: migrateClassification(saved?.classification),
+    explanation: saved?.explanation ?? "",
+  };
+}
+
+/** Saved text wins; static data (title, category) always comes from the template. */
+function hydrateWorkstream(template: Workstream, saved: Partial<Workstream> | undefined): Workstream {
+  return {
+    ...template,
+    ...saved,
+    id: template.id,
+    title: template.title,
+    category: template.category,
+    classification: migrateClassification(saved?.classification ?? template.classification),
+  };
+}
+
+/** Fill in anything missing from a saved v2 draft and drop fields that no longer exist. */
+export function hydrateAssessment(saved: SavedDraft): AssessmentState {
   const base = initialAssessment();
-  const responses = { ...base.responses };
-  Object.entries(saved.responses ?? {}).forEach(([id, r]) => {
-    responses[id] = { ...emptyResponse(), ...r };
-  });
-  const checks = base.checks.map((_, i) => Boolean(saved.checks?.[i]));
+  const responses = Object.fromEntries(questions.map((q) => [q.id, hydrateResponse(saved.responses?.[q.id])]));
   const savedPlanById = new Map((saved.plan ?? []).map((item) => [item.id, item]));
-  const plan = base.plan.map((item) => ({ ...item, ...savedPlanById.get(item.id) }));
+  const engineAssessment = {
+    ...base.engineAssessment,
+    ...saved.engineAssessment,
+    engineClassification: migrateClassification(saved.engineAssessment?.engineClassification),
+    sharedCore: { ...base.engineAssessment.sharedCore, ...saved.engineAssessment?.sharedCore },
+    separatePrime: { ...base.engineAssessment.separatePrime, ...saved.engineAssessment?.separatePrime },
+  };
+  const plan = base.plan.map((item) => hydrateWorkstream(item, savedPlanById.get(item.id)));
   return {
     ...base,
-    ...saved,
     gameInfo: { ...base.gameInfo, ...saved.gameInfo },
+    status: saved.status ?? base.status,
+    lastSavedAt: saved.lastSavedAt,
     responses,
-    engineAssessment: {
-      ...base.engineAssessment,
-      ...saved.engineAssessment,
-      sharedCore: {
-        ...base.engineAssessment.sharedCore,
-        ...saved.engineAssessment?.sharedCore,
-      },
-      separatePrime: {
-        ...base.engineAssessment.separatePrime,
-        ...saved.engineAssessment?.separatePrime,
-      },
-    },
-    plan,
-    checks,
+    engineAssessment,
+    plan: applyEngineEstimate(plan, engineAssessment),
+    checks: base.checks.map((_, i) => Boolean(saved.checks?.[i])),
   };
 }
 
 const complexityValue: Record<ImpactClass, number> = {
   reuse: 0,
-  modify: 1,
+  remove: 1,
+  extend: 1,
+  refactor: 2,
   rewrite: 4,
   new: 4,
 };
+const MAX_COMPLEXITY = 4;
 
 const complexityLevels = [
   { max: 0.16, label: "Minor Conversion", level: "minor" },
@@ -93,28 +94,25 @@ const complexityLevels = [
   { max: Infinity, label: "Near-Complete Rebuild", level: "rebuild" },
 ];
 
-export function calculateComplexity(state: AssessmentState) {
-  let weighted = 0;
-  let possible = 0;
+export const gameQuestions = questions.filter((q) => q.category === "game");
 
-  for (const question of questions) {
-    const response = state.responses[question.id];
-    possible += question.weight * 4;
-    if (response?.classification) {
-      weighted += question.weight * complexityValue[response.classification];
-    } else if (response?.answer === "unsure") {
-      weighted += question.weight * 2;
-    }
+/** Scores game-side work only; platform work is the same for every game. */
+export function calculateComplexity(state: AssessmentState) {
+  const unclassified = gameQuestions.filter((q) => !state.responses[q.id]?.classification).length;
+  if (unclassified > 0) {
+    const noun = unclassified === 1 ? "question" : "questions";
+    return { label: `Incomplete — ${unclassified} ${noun} not classified`, level: "incomplete", ratio: 0, index: -1 };
   }
 
+  const possible = gameQuestions.reduce((sum, q) => sum + q.weight * MAX_COMPLEXITY, 0);
+  const weighted = gameQuestions.reduce((sum, q) => {
+    const c = state.responses[q.id].classification as ImpactClass;
+    return sum + q.weight * complexityValue[c];
+  }, 0);
   const ratio = possible ? weighted / possible : 0;
   const index = complexityLevels.findIndex((band) => ratio < band.max);
   const { label, level } = complexityLevels[index];
   return { label, level, ratio, index };
-}
-
-export function totalAssessmentDays(state: AssessmentState) {
-  return Object.values(state.responses).reduce((sum, r) => sum + (Number(r.effortDays) || 0), 0);
 }
 
 export function totalPlanDays(state: AssessmentState) {
@@ -168,7 +166,7 @@ export function attentionItems(state: AssessmentState): AttentionItem[] {
 }
 
 export function classificationCounts(state: AssessmentState) {
-  const counts = { reuse: 0, modify: 0, rewrite: 0, new: 0, none: 0 };
+  const counts: Record<ImpactClass | "none", number> = { reuse: 0, extend: 0, refactor: 0, rewrite: 0, new: 0, remove: 0, none: 0 };
   questions.forEach((q) => {
     const c = state.responses[q.id]?.classification;
     counts[c || "none"] += 1;
@@ -177,118 +175,9 @@ export function classificationCounts(state: AssessmentState) {
 }
 
 export function deriveFindings(state: AssessmentState) {
-  const buckets: Record<ImpactClass, string[]> = {
-    reuse: [],
-    modify: [],
-    rewrite: [],
-    new: [],
-  };
+  const buckets = Object.fromEntries(CLASSES.map((c) => [c, [] as string[]])) as Record<ImpactClass, string[]>;
   state.plan.forEach((w) => {
     if (w.classification) buckets[w.classification].push(w.title);
   });
   return buckets;
-}
-
-export function syncPlanFromAssessment(state: AssessmentState): Workstream[] {
-  return state.plan.map((workstream) => {
-    if (workstream.id === "multiplayer-engine-2" && state.engineAssessment.strategy) {
-      const strategy = state.engineAssessment.strategy;
-      const classification: Classification =
-        strategy === "reuse" ? "reuse" :
-        strategy === "replace" ? "rewrite" :
-        "modify";
-      const selectedEstimate =
-        strategy === "replace"
-          ? state.engineAssessment.separatePrime
-          : state.engineAssessment.sharedCore;
-      const dependencies = [
-        workstream.dependencies,
-        state.engineAssessment.networkingFramework.trim()
-          ? `Networking framework: ${state.engineAssessment.networkingFramework.trim()}`
-          : "",
-        state.engineAssessment.stateUpdateModel.trim()
-          ? `State/update model: ${state.engineAssessment.stateUpdateModel.trim()}`
-          : "",
-      ].filter(Boolean).join("\n");
-
-      return {
-        ...workstream,
-        classification,
-        whyChange:
-          workstream.whyChange ||
-          (strategy === "replace"
-            ? state.engineAssessment.replaceReason
-            : "Evolve the existing multiplayer architecture so mobile PvP and Prime can share a player-agnostic match core while keeping platform-specific input, session and transport concerns behind adapters."),
-        proposedImplementation:
-          workstream.proposedImplementation || state.engineAssessment.migrationPlan,
-        reusedComponents:
-          state.engineAssessment.reusableComponents.trim() || workstream.reusedComponents,
-        personDays:
-          workstream.personDays || engineOptionTotal(selectedEstimate),
-        dependencies,
-        risk: selectedEstimate.risk,
-      };
-    }
-
-    const related = questions.filter((q) => q.workstream === workstream.id);
-    const classes = related
-      .map((q) => state.responses[q.id]?.classification)
-      .filter(Boolean) as ImpactClass[];
-
-    if (!classes.length) return workstream;
-
-    const strongest = [...classes].sort(
-      (a, b) => complexityValue[b] - complexityValue[a]
-    )[0];
-
-    const explanations = related
-      .map((q) => state.responses[q.id]?.explanation?.trim())
-      .filter(Boolean);
-
-    const effort = related.reduce(
-      (sum, q) => sum + (Number(state.responses[q.id]?.effortDays) || 0),
-      0
-    );
-
-    return {
-      ...workstream,
-      classification: strongest,
-      whyChange: workstream.whyChange || explanations.join("\n"),
-      personDays: workstream.personDays || effort,
-    };
-  });
-}
-
-
-export function engineOptionTotal(option: EngineOptionEstimate) {
-  return (
-    (Number(option.coreOrBuildDays) || 0) +
-    (Number(option.mobileRegressionDays) || 0) +
-    (Number(option.primeIntegrationDays) || 0) +
-    (Number(option.qaDays) || 0)
-  );
-}
-
-export function engineAssessmentIssues(state: AssessmentState) {
-  const engine = state.engineAssessment;
-  const issues: string[] = [];
-
-  if (!engine.strategy) issues.push("Select Reuse, Extend, Refactor or Replace for the existing multiplayer engine.");
-  if (!engine.networkingFramework.trim()) issues.push("Document the current networking framework.");
-  if (!engine.stateUpdateModel.trim()) issues.push("Document the current state/update model.");
-  if (engineOptionTotal(engine.sharedCore) <= 0) issues.push("Estimate the Shared Engine 2.0 path.");
-  if (engineOptionTotal(engine.separatePrime) <= 0) issues.push("Estimate the Separate Prime Engine path.");
-  if (!engine.sharedCore.maintenanceImpact.trim()) issues.push("Describe ongoing maintenance for the Shared Engine 2.0 path.");
-  if (!engine.separatePrime.maintenanceImpact.trim()) issues.push("Describe ongoing maintenance for the Separate Prime Engine path.");
-
-  if (engine.strategy === "replace") {
-    if (!engine.replaceReason.trim()) {
-      issues.push("A Replace decision requires a concrete technical reason.");
-    }
-    if (!engine.reusableComponents.trim()) {
-      issues.push("A Replace decision must still identify reusable components.");
-    }
-  }
-
-  return issues;
 }

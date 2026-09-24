@@ -18,7 +18,7 @@ type Props = {
 };
 
 const RISK_ORDER = { low: 0, medium: 1, high: 2 };
-const CLASS_ORDER = { "": -1, reuse: 0, modify: 1, rewrite: 2, new: 3 };
+const CLASS_ORDER = { "": -1, reuse: 0, remove: 1, extend: 2, refactor: 3, rewrite: 4, new: 5 };
 const COLUMNS: { key: SortKey; label: string; numeric?: boolean }[] = [
   { key: "title", label: "Workstream" },
   { key: "classification", label: "Action" },
