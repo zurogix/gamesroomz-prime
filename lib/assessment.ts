@@ -55,6 +55,8 @@ export function hydrateAssessment(saved: Partial<AssessmentState>): AssessmentSt
     responses[id] = { ...emptyResponse(), ...r };
   });
   const checks = base.checks.map((_, i) => Boolean(saved.checks?.[i]));
+  const savedPlanById = new Map((saved.plan ?? []).map((item) => [item.id, item]));
+  const plan = base.plan.map((item) => ({ ...item, ...savedPlanById.get(item.id) }));
   return {
     ...base,
     ...saved,
@@ -72,7 +74,7 @@ export function hydrateAssessment(saved: Partial<AssessmentState>): AssessmentSt
         ...saved.engineAssessment?.separatePrime,
       },
     },
-    plan: saved.plan?.length ? saved.plan : base.plan,
+    plan,
     checks,
   };
 }
