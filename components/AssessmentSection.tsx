@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { isQuestionDone } from "@/lib/assessment";
+import { engineAssessmentIssues, isQuestionDone } from "@/lib/assessment";
 import { questions } from "@/lib/questions";
 import { ANSWERS, ASSESSMENT_SECTIONS, OVERVIEW, PLAN } from "@/lib/sections";
-import { AssessmentState, Classification, QuestionResponse } from "@/lib/types";
+import { AssessmentState, Classification, EngineOptionEstimate, MultiplayerEngineAssessment, QuestionResponse } from "@/lib/types";
 import PageHeader from "./PageHeader";
 import QuestionRow from "./QuestionRow";
+import MultiplayerEnginePanel from "./MultiplayerEnginePanel";
 
 type Props = {
   state: AssessmentState;
@@ -14,6 +15,8 @@ type Props = {
   savedAt: number | null;
   focusId: string | null;
   onChange: (id: string, patch: Partial<QuestionResponse>) => void;
+  onEngineChange: (patch: Partial<MultiplayerEngineAssessment>) => void;
+  onEngineOptionChange: (option: "sharedCore" | "separatePrime", patch: Partial<EngineOptionEstimate>) => void;
   onNavigate: (view: string) => void;
   onContinueToPlan: () => void;
 };
@@ -24,7 +27,17 @@ function isTyping(target: EventTarget | null) {
   return target instanceof HTMLElement && Boolean(target.closest("input, textarea, select, [contenteditable]"));
 }
 
-export default function AssessmentSection({ state, section, savedAt, focusId, onChange, onNavigate, onContinueToPlan }: Props) {
+export default function AssessmentSection({
+  state,
+  section,
+  savedAt,
+  focusId,
+  onChange,
+  onEngineChange,
+  onEngineOptionChange,
+  onNavigate,
+  onContinueToPlan,
+}: Props) {
   const sectionQs = questions.filter((q) => q.section === section);
   const index = ASSESSMENT_SECTIONS.indexOf(section);
   const prev = index === 0 ? OVERVIEW : ASSESSMENT_SECTIONS[index - 1];
@@ -68,7 +81,16 @@ export default function AssessmentSection({ state, section, savedAt, focusId, on
 
   const done = sectionQs.filter((q) => isQuestionDone(state, q)).length;
   const crumb = <>Assessment <span>·</span> Section {index + 1} of {ASSESSMENT_SECTIONS.length} <span>·</span> {done}/{sectionQs.length} answered</>;
-  const goNext = () => (next === PLAN ? onContinueToPlan() : onNavigate(next));
+  const engineIssues = section === "Multiplayer Engine 2.0" ? engineAssessmentIssues(state) : [];
+  const replaceBlocked =
+    section === "Multiplayer Engine 2.0" &&
+    state.engineAssessment.strategy === "replace" &&
+    (!state.engineAssessment.replaceReason.trim() || !state.engineAssessment.reusableComponents.trim());
+
+  const goNext = () => {
+    if (replaceBlocked) return;
+    return next === PLAN ? onContinueToPlan() : onNavigate(next);
+  };
 
   return (
     <>
@@ -88,6 +110,14 @@ export default function AssessmentSection({ state, section, savedAt, focusId, on
             />
           ))}
         </div>
+        {section === "Multiplayer Engine 2.0" && (
+          <MultiplayerEnginePanel
+            value={state.engineAssessment}
+            issues={engineIssues}
+            onChange={onEngineChange}
+            onOptionChange={onEngineOptionChange}
+          />
+        )}
         <div className="pager">
           <div className="shortcuts" aria-hidden="true">
             <span><kbd>J</kbd><kbd>K</kbd> move</span>
@@ -96,7 +126,9 @@ export default function AssessmentSection({ state, section, savedAt, focusId, on
           </div>
           <div className="pager-actions">
             <button type="button" className="btn" onClick={() => onNavigate(prev)}>← {prev}</button>
-            <button type="button" className="btn primary" onClick={goNext}>{next} →</button>
+            <button type="button" className="btn primary" disabled={replaceBlocked} onClick={goNext}>
+              {replaceBlocked ? "Document Replace evidence to continue" : `${next} →`}
+            </button>
           </div>
         </div>
       </div>
