@@ -15,7 +15,7 @@ type Props = {
 
 const TEXT_FIELDS: Record<Exclude<DrawerTab, "effort">, PlanTextField[]> = {
   overview: [
-    { key: "currentImplementation", label: "Current implementation" },
+    { key: "currentImplementation", label: "Current implementation", placeholder: "How it works today — see the discovery answers." },
     { key: "primeRequirement", label: "Prime requirement" },
     { key: "deliverable", label: "Deliverable / acceptance outcome" },
   ],
@@ -24,8 +24,8 @@ const TEXT_FIELDS: Record<Exclude<DrawerTab, "effort">, PlanTextField[]> = {
     { key: "proposedImplementation", label: "Proposed implementation", placeholder: "Architecture and implementation steps, and how the Prime requirement will be achieved.", large: true },
   ],
   comp: [
-    { key: "reusedComponents", label: "Existing components to reuse" },
-    { key: "changedComponents", label: "Components changed / removed / rebuilt" },
+    { key: "reusedComponents", label: "Existing components to reuse", placeholder: "What stays as it is." },
+    { key: "changedComponents", label: "Components changed / removed / rebuilt", placeholder: "What changes, and how." },
   ],
 };
 

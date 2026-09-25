@@ -4,6 +4,7 @@ import { CLASSES, CONFIRMATIONS, ImpactClass, STATUS_STEPS } from "./sections";
 import { applyEngineEstimate, emptyEngineAssessment } from "./engine";
 import { DISCOVERY_QUESTIONS } from "./discovery";
 import { hydrateAnswer } from "./discoveryAnswers";
+import { replaceLegacyDefaults } from "./legacyTemplateDefaults";
 import { migrateClassification } from "./migrate";
 import { emptyPrimeTargets } from "./primeTargets";
 
@@ -28,9 +29,12 @@ export const initialAssessment = (): AssessmentState => ({
   checks: CONFIRMATIONS.map(() => false),
 });
 
-/** Saved text wins; static data (title, category) always comes from the template. */
+/**
+ * Saved text wins, except untouched old template defaults, which take the current
+ * template value. Static data (title, category) always comes from the template.
+ */
 function hydrateWorkstream(template: Workstream, saved: Partial<Workstream> | undefined): Workstream {
-  return {
+  const merged = {
     ...template,
     ...saved,
     id: template.id,
@@ -38,6 +42,7 @@ function hydrateWorkstream(template: Workstream, saved: Partial<Workstream> | un
     category: template.category,
     classification: migrateClassification(saved?.classification ?? template.classification),
   };
+  return replaceLegacyDefaults(merged, template);
 }
 
 function hydrateStatus(status: string | undefined): AssessmentStatus {
