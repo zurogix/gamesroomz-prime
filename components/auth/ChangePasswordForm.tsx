@@ -6,25 +6,24 @@ import { MIN_PASSWORD_LENGTH } from "@/lib/password";
 import { changePasswordSchema } from "@/lib/schemas/api";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-const SAME_PASSWORD = "Choose a password that is different from your current one.";
 const FAILED = "Could not change the password. Please try again.";
 
-/** Sets a new password with Supabase, then clears the temporary-password flag. */
+/** Picks up a fresh session after the change; if that fails the user signs in again with the new password. */
+async function refreshSession(): Promise<boolean> {
+  try {
+    const { error } = await createSupabaseBrowserClient().auth.refreshSession();
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+/** Sends the new password to the server, which sets it and clears the temporary-password flag in one request. */
 export default function ChangePasswordForm() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-
-  async function updatePassword(): Promise<string | null> {
-    try {
-      const { error: updateError } = await createSupabaseBrowserClient().auth.updateUser({ password });
-      if (!updateError) return null;
-      return updateError.code === "same_password" ? SAME_PASSWORD : FAILED;
-    } catch {
-      return FAILED;
-    }
-  }
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -32,15 +31,12 @@ export default function ChangePasswordForm() {
     if (!parsed.success) return setError(parsed.error.issues[0]?.message ?? FAILED);
     setBusy(true);
     setError("");
-    const updateError = await updatePassword();
-    if (updateError) {
+    const result = await apiRequest("/api/me/password", { method: "POST", body: JSON.stringify({ password }) });
+    if (!result.ok) {
       setBusy(false);
-      return setError(updateError);
+      return setError(result.error);
     }
-    const cleared = await apiRequest("/api/me/password-changed", { method: "POST", body: "{}" });
-    setBusy(false);
-    if (!cleared.ok) return setError(cleared.error);
-    window.location.assign("/");
+    window.location.assign((await refreshSession()) ? "/" : "/login");
   }
 
   return (

@@ -36,6 +36,10 @@ export const createMemberSchema = z.object({
 /** An empty body (or no password) means "generate one". */
 export const resetPasswordSchema = z.object({ temporaryPassword: passwordSchema.optional() }).strict();
 
+/** Body of POST /api/me/password. */
+export const newPasswordSchema = z.object({ password: passwordSchema }).strict();
+
+/** The change-password form: the same rule plus a matching confirmation. */
 export const changePasswordSchema = z
   .object({ password: passwordSchema, confirm: z.string() })
   .refine((v) => v.password === v.confirm, { message: "The two passwords don't match.", path: ["confirm"] });

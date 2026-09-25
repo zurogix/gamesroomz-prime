@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { changePasswordSchema, createMemberSchema, resetPasswordSchema } from "./api";
+import { changePasswordSchema, createMemberSchema, newPasswordSchema, resetPasswordSchema } from "./api";
 
 const member = { email: "dev@example.com", name: "Dev", role: "developer" as const };
 
@@ -15,6 +15,8 @@ describe("password schemas", () => {
     expect(changePasswordSchema.safeParse({ password: "elevenchars", confirm: "elevenchars" }).success).toBe(false);
     expect(changePasswordSchema.safeParse({ password: "twelve-chars", confirm: "twelve-chars!" }).success).toBe(false);
     expect(changePasswordSchema.safeParse({ password: "twelve-chars", confirm: "twelve-chars" }).success).toBe(true);
+    expect(newPasswordSchema.safeParse({ password: "elevenchars" }).success).toBe(false);
+    expect(newPasswordSchema.safeParse({ password: "twelve-chars" }).success).toBe(true);
   });
 
   it("never echoes the password in error messages", () => {

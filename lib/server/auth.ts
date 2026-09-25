@@ -64,7 +64,7 @@ export const getProfile = cache(async (identity: SessionIdentity): Promise<Sessi
 
 /**
  * For API routes: the caller's profile, or a 401/403 response. While the caller still has a
- * temporary password, only /api/me and /api/me/password-changed are answered.
+ * temporary password, only /api/me and /api/me/password are answered.
  */
 export async function requireProfile(): Promise<Result<SessionProfile>> {
   const user = await getSessionUser();

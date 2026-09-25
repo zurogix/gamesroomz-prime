@@ -11,7 +11,7 @@ type AuthError = { code?: string; message: string } | null;
 
 /** Turns known Supabase refusals into messages for the product user; never includes the password. */
 function toAuthUserError(error: AuthError): Error {
-  if (error?.code === "weak_password") return new AuthUserError("Supabase rejected that password as too weak. Generate one or choose a longer one.");
+  if (error?.code === "weak_password") return new AuthUserError("That password is too weak. Choose a longer one with a mix of letters and digits.");
   return new Error(`Supabase admin request failed (${error?.code ?? "unknown"})`);
 }
 

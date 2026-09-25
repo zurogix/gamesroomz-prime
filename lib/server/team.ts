@@ -31,7 +31,9 @@ export async function resetMemberPassword(id: string, temporaryPassword: string)
   await db.profile.update({ where: { id }, data: { mustChangePassword: true } });
 }
 
-export async function markPasswordChanged(id: string) {
+/** The user's own new password. The flag is cleared only once Supabase has accepted the password. */
+export async function changeOwnPassword(id: string, password: string) {
+  await setAuthPassword(id, password);
   await db.profile.update({ where: { id }, data: { mustChangePassword: false } });
 }
 
