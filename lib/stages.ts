@@ -1,5 +1,4 @@
 import { DISCOVERY_SECTIONS } from "./discovery";
-import type { Role } from "./permissions";
 import { FINDINGS, OVERVIEW, PLAN, SUMMARY } from "./sections";
 import type { AssessmentStatus } from "./types";
 
@@ -68,24 +67,24 @@ export function stageForView(view: string): Stage | null {
 export const stageReached = (stage: Stage, status: AssessmentStatus) => statusIndex(status) >= statusIndex(stage.opensAt);
 
 /**
- * Whether a stage is shown at all. Stages the workflow has not reached are hidden, except for
- * product with "Preview upcoming stages" switched on.
+ * Whether a stage is shown at all: only once the workflow has reached it, the same for every role.
+ * Stages open only through the stage actions (Publish findings, Options agreed — open plan, Agree plan).
  */
-export const stageOpen = (role: Role, stage: Stage, status: AssessmentStatus, previewUpcoming = false) =>
-  stageReached(stage, status) || (role === "product" && previewUpcoming);
+export const stageOpen = (stage: Stage, status: AssessmentStatus) => stageReached(stage, status);
 
-/** The stages to show in navigation, in order. Developers only ever get stages that are open. */
-export const navigableStages = (role: Role, status: AssessmentStatus, previewUpcoming = false) =>
-  STAGES.filter((stage) => stageOpen(role, stage, status, previewUpcoming));
-
-/** An upcoming stage product has chosen to preview. */
-export const isPreview = (role: Role, stage: Stage, status: AssessmentStatus, previewUpcoming = false) =>
-  !stageReached(stage, status) && stageOpen(role, stage, status, previewUpcoming);
+/** The stages to show in navigation, in order. Depends only on the status. */
+export const navigableStages = (status: AssessmentStatus) => STAGES.filter((stage) => stageOpen(stage, status));
 
 /** Whether a view may be shown; views outside any stage (the Overview) always may. */
-export function viewOpen(view: string, role: Role, status: AssessmentStatus, previewUpcoming = false) {
+export function viewOpen(view: string, status: AssessmentStatus) {
   const stage = stageForView(view);
-  return stage === null || stageOpen(role, stage, status, previewUpcoming);
+  return stage === null || stageOpen(stage, status);
+}
+
+/** The rail's progress line, e.g. "Step 1: Discovery — Discovery submitted, under review". */
+export function stageSummary(status: AssessmentStatus) {
+  const stage = currentStage(status);
+  return `Step ${stage.number}: ${stage.title} — ${statusLabel(status).replace(" — ", ", ")}`;
 }
 
 export type StageProgress = "done" | "current" | "upcoming";

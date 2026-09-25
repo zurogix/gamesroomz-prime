@@ -6,6 +6,7 @@ import { AssessmentState } from "@/lib/types";
 import RailFollowUp from "./RailFollowUp";
 import RailPlanSummary from "./RailPlanSummary";
 import RailProgress from "./RailProgress";
+import RailStageProgress from "./RailStageProgress";
 import RailSectionTips from "./RailSectionTips";
 
 type Props = {
@@ -15,17 +16,19 @@ type Props = {
   onOpenWorkstream: (id: string) => void;
 };
 
-/** The right-hand rail changes with the page; the Management Summary has none. */
+/** The right-hand rail changes with the page and always starts with the Progress box; some pages have no rail. */
 export default function PageRail({ view, state, onJumpToQuestion, onOpenWorkstream }: Props) {
   const kind = railKindFor(view);
   if (kind === "none") return null;
 
   const discovery = { label: "Discovery overall", percent: discoveryCoverage(state.answers) };
   const followUp = <RailFollowUp answers={state.answers} onJumpToQuestion={onJumpToQuestion} />;
+  const stageProgress = <RailStageProgress state={state} />;
 
   if (kind === "plan") {
     return (
       <aside className="rail" aria-label="Plan summary">
+        {stageProgress}
         <RailPlanSummary state={state} onOpenWorkstream={onOpenWorkstream} />
       </aside>
     );
@@ -34,6 +37,7 @@ export default function PageRail({ view, state, onJumpToQuestion, onOpenWorkstre
   if (kind === "overview") {
     return (
       <aside className="rail" aria-label="Progress">
+        {stageProgress}
         <RailProgress lines={[{ ...discovery, label: "Discovery" }, { label: "Plan", percent: planCoverage(state) }]} />
         {followUp}
       </aside>
@@ -46,6 +50,7 @@ export default function PageRail({ view, state, onJumpToQuestion, onOpenWorkstre
 
   return (
     <aside className="rail" aria-label="About this section">
+      {stageProgress}
       <RailSectionTips section={section} />
       <RailProgress lines={[sectionLine, discovery]} />
       {followUp}

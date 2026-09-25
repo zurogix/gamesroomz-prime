@@ -14,13 +14,12 @@ import ProgressLine from "@/components/stages/ProgressLine";
 import StageActions from "@/components/stages/StageActions";
 import { useAssessmentEditor } from "@/hooks/useAssessmentEditor";
 import { useAssessmentSync } from "@/hooks/useAssessmentSync";
-import { usePreviewUpcoming } from "@/hooks/usePreviewUpcoming";
 import { useTheme } from "@/hooks/useTheme";
 import { DISCOVERY_QUESTIONS, sectionTitle } from "@/lib/discovery";
 import { focusQuestion, railKindFor } from "@/lib/rail";
 import { canEdit, isProduct } from "@/lib/permissions";
 import { ASSESSMENT_SECTIONS, FINDINGS, OVERVIEW, PLAN, SUMMARY } from "@/lib/sections";
-import { currentStage, isPreview, navigableStages, Stage, stageById, stageForView, viewOpen } from "@/lib/stages";
+import { currentStage, navigableStages, Stage, stageById, stageForView, viewOpen } from "@/lib/stages";
 import { AssessmentState } from "@/lib/types";
 import { SaveStatusContext } from "@/components/SaveStatusContext";
 import { CurrentUser } from "@/components/UserBadge";
@@ -48,15 +47,14 @@ export default function PortalWorkspace({ gameId, initialState, initialVersion, 
   const [focusId, setFocusId] = useState<string | null>(null);
   const [drawerId, setDrawerId] = useState<string | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const { preview, setPreview } = usePreviewUpcoming();
 
   const { role } = user;
   const { status } = state;
-  const stages = navigableStages(role, status, preview);
-  const isOpen = useCallback((v: string) => viewOpen(v, role, status, preview), [role, status, preview]);
+  const stages = navigableStages(status);
+  const isOpen = useCallback((v: string) => viewOpen(v, status), [status]);
   const openViews = [OVERVIEW, ...ASSESSMENT_SECTIONS, FINDINGS, PLAN, SUMMARY].filter(isOpen);
   const planOpen = isOpen(PLAN);
-  // A stage that is not open is never shown, even if it was the last view (e.g. after preview is switched off).
+  // A stage that is not open is never shown, even if it was the last view (e.g. after a stage was reopened).
   const shownView = isOpen(view) ? view : OVERVIEW;
   const viewStage = stageForView(shownView);
 
@@ -185,15 +183,10 @@ export default function PortalWorkspace({ gameId, initialState, initialVersion, 
           onTheme={setTheme}
           user={user}
           stages={stages}
-          previewUpcoming={preview}
-          onPreviewUpcoming={setPreview}
         />
         <main className="main">
           {saveStatus.state === "conflict" && <ConflictBanner onReload={onReload} />}
-          <ProgressLine stages={stages} status={status} role={role} previewUpcoming={preview} activeStage={viewStage} onOpen={openStage} />
-          {viewStage && isPreview(role, viewStage, status, preview) && (
-            <p className="preview-note"><span className="preview-tag">Preview</span> This stage is not open to the developer yet.</p>
-          )}
+          <ProgressLine stages={stages} status={status} activeStage={viewStage} onOpen={openStage} />
           {renderView()}
         </main>
         {showRail && <PageRail view={shownView} state={state} onJumpToQuestion={jumpToQuestion} onOpenWorkstream={openWorkstream} />}

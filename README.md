@@ -95,5 +95,7 @@ Four stages, shown as a progress line at the top of each game ("Step 1: Discover
 4. **Summary** — the Management Summary, open to developers once the plan is agreed (→ Plan agreed). Product can
    reopen the plan.
 
-Only stages the workflow has reached are shown; later stages are hidden completely. The product team can switch on
-"Preview upcoming stages" in the sidebar footer (remembered per browser) to see later stages, marked "Preview".
+Only stages the workflow has reached are shown — the same for product and developers; later stages are hidden
+completely. A stage opens only through its stage action: **Publish findings** opens stage 2, **Options agreed — open
+plan** opens stage 3 and **Agree plan** opens stage 4. The right-hand rail's **Progress** box shows the current step
+and status.

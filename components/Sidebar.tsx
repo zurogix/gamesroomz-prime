@@ -2,9 +2,8 @@ import { Fragment, useEffect } from "react";
 import { planFieldsDone, PLAN_FIELD_COUNT } from "@/lib/assessment";
 import { DISCOVERY_SECTIONS } from "@/lib/discovery";
 import { discoveryCoverage } from "@/lib/discoveryAnswers";
-import { isProduct } from "@/lib/permissions";
 import { OVERVIEW } from "@/lib/sections";
-import { isPreview, Stage } from "@/lib/stages";
+import { Stage } from "@/lib/stages";
 import { AssessmentState } from "@/lib/types";
 import { ThemeChoice } from "@/hooks/useTheme";
 import ProgressRing from "./ProgressRing";
@@ -19,15 +18,13 @@ type Props = {
   onOpenPalette: () => void;
   onTheme: (theme: ThemeChoice) => void;
   user: CurrentUser;
-  /** Only open stages (plus previewed ones for product); unopened stages are not listed at all. */
+  /** Only stages the workflow has reached; the others are not listed at all. */
   stages: Stage[];
-  previewUpcoming: boolean;
-  onPreviewUpcoming: (on: boolean) => void;
 };
 
 const THEMES: ThemeChoice[] = ["light", "system", "dark"];
 
-export default function Sidebar({ state, active, theme, user, onNavigate, onOpenPalette, onTheme, stages, previewUpcoming, onPreviewUpcoming }: Props) {
+export default function Sidebar({ state, active, theme, user, onNavigate, onOpenPalette, onTheme, stages }: Props) {
   useEffect(() => {
     document.querySelector(".nav-item.on")?.scrollIntoView({ block: "nearest", inline: "nearest" });
   }, [active]);
@@ -43,7 +40,6 @@ export default function Sidebar({ state, active, theme, user, onNavigate, onOpen
     <div className="nav-group label">
       Step {stage.number} · {stage.title}
       {stage.id === "discovery" && ` · ${discoveryCoverage(state.answers)}%`}
-      {isPreview(user.role, stage, state.status, previewUpcoming) && <span className="preview-tag">Preview</span>}
     </div>
   );
   const stageItems = (stage: Stage) => {
@@ -79,12 +75,6 @@ export default function Sidebar({ state, active, theme, user, onNavigate, onOpen
         ))}
       </nav>
       <div className="side-foot">
-        {isProduct(user.role) && (
-          <label className="preview-switch">
-            <input type="checkbox" role="switch" checked={previewUpcoming} onChange={(e) => onPreviewUpcoming(e.target.checked)} />
-            Preview upcoming stages
-          </label>
-        )}
         <span className="label">Theme</span>
         <div className="theme-row">
           {THEMES.map((t) => (

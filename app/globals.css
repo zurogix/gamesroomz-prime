@@ -419,13 +419,11 @@ a.btn{text-decoration:none}
 .progress-step.current button{background:var(--primary);border-color:var(--primary);color:var(--primary-ink);font-weight:700}
 .progress-step.upcoming button{border-style:dashed;color:var(--muted)}
 .progress-step.on:not(.current) button{border-color:var(--primary);color:var(--primary)}
-.progress-step .preview-tag{margin-left:8px}
+.rail-stage{padding:12px 14px;border-radius:10px;background:var(--tint);color:var(--tint-ink)}
+.rail-stage .label{color:var(--tint-ink)}
+.rail-stage p{margin:4px 0 0;font-weight:700}
+.rail-stage .rail-progress-item{margin-top:10px}
 .progress-status{font-size:13px;color:var(--muted)}
-.preview-switch{display:flex;align-items:center;gap:8px;color:var(--ink-2);font-size:13px;line-height:1.3;cursor:pointer}
-.preview-switch input{width:18px;height:18px;margin:0;accent-color:var(--primary)}
-.preview-tag{display:inline-block;margin-left:6px;padding:0 6px;border-radius:5px;background:var(--warn-bg);color:var(--warn);font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;line-height:1.3}
-.preview-note{margin:10px 0 0;font-size:13px;color:var(--ink-2)}
-.preview-note .preview-tag{margin:0 6px 0 0}
 .next-note{padding:12px 16px;border-radius:12px;background:var(--tint);color:var(--tint-ink)}
 .next-note p{margin:4px 0 0;font-size:14px}
 .next-step p{max-width:70ch}

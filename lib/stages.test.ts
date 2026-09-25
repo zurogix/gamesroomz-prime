@@ -3,10 +3,11 @@ import { hydrateAssessment, initialAssessment } from "./assessment";
 import { nextStepText } from "./nextStep";
 import { FINDINGS, OVERVIEW, PLAN, SUMMARY } from "./sections";
 import { applyStatusChange, stageActionsFor, withTransitionEffects } from "./stageActions";
-import { hydrateStatus, isPreview, navigableStages, stageById, stageProgress, STAGES, StageId, STATUSES, viewOpen, WHAT_HAPPENS_NEXT } from "./stages";
+import type { Role } from "./permissions";
+import { hydrateStatus, navigableStages, stageProgress, STAGES, StageId, stageSummary, STATUSES, viewOpen, WHAT_HAPPENS_NEXT } from "./stages";
 import { AssessmentStatus } from "./types";
 
-const ids = (role: "developer" | "product", status: AssessmentStatus, preview = false) => navigableStages(role, status, preview).map((s) => s.id);
+const ids = (status: AssessmentStatus) => navigableStages(status).map((s) => s.id);
 
 const OPEN: Record<AssessmentStatus, StageId[]> = {
   discovery: ["discovery"],
@@ -17,32 +18,40 @@ const OPEN: Record<AssessmentStatus, StageId[]> = {
   agreed: ["discovery", "findings", "plan", "summary"],
 };
 
+const ROLES: Role[] = ["developer", "product"];
+
 describe("stage navigation", () => {
-  it.each(STATUSES.map((s) => s.value))("a developer only ever gets open stages in %s", (status) => {
-    expect(ids("developer", status)).toEqual(OPEN[status]);
-    // The preview switch has no effect for developers.
-    expect(ids("developer", status, true)).toEqual(OPEN[status]);
+  it.each(STATUSES.map((s) => s.value))("depends only on the status, the same for both roles (%s)", (status) => {
+    // Visibility takes no role at all, so product and developer always get the same stages.
+    expect(navigableStages.length).toBe(1);
+    expect(viewOpen.length).toBe(2);
+    expect(ids(status)).toEqual(OPEN[status]);
   });
 
-  it.each(STATUSES.map((s) => s.value))("product sees the same by default, and every stage with preview on (%s)", (status) => {
-    expect(ids("product", status)).toEqual(OPEN[status]);
-    expect(ids("product", status, true)).toEqual(["discovery", "findings", "plan", "summary"]);
+  it("blocks views of stages not reached yet", () => {
+    expect(viewOpen(PLAN, "findings")).toBe(false);
+    expect(viewOpen(SUMMARY, "plan-submitted")).toBe(false);
+    expect(viewOpen(FINDINGS, "discovery-submitted")).toBe(false);
+    expect(viewOpen(FINDINGS, "findings")).toBe(true);
+    expect(viewOpen(OVERVIEW, "discovery")).toBe(true);
   });
 
-  it("blocks views of unopened stages", () => {
-    expect(viewOpen(PLAN, "developer", "findings")).toBe(false);
-    expect(viewOpen(SUMMARY, "developer", "plan-submitted")).toBe(false);
-    expect(viewOpen(FINDINGS, "developer", "findings")).toBe(true);
-    expect(viewOpen(OVERVIEW, "developer", "discovery")).toBe(true);
-    expect(viewOpen(PLAN, "product", "findings")).toBe(false);
-    expect(viewOpen(PLAN, "product", "findings", true)).toBe(true);
+  it("opens stages only through Publish findings, Options agreed — open plan and Agree plan", () => {
+    const opening = ROLES.flatMap((role) =>
+      STATUSES.flatMap(({ value: from }) =>
+        stageActionsFor(role, from)
+          .filter((a) => ids(a.to).length > ids(from).length)
+          .map((a) => `${a.label} → ${ids(a.to).at(-1)}`),
+      ),
+    );
+
+    expect(opening.sort()).toEqual(["Agree plan → summary", "Options agreed — open plan → plan", "Publish findings → findings"]);
   });
 
-  it("labels only previewed upcoming stages as Preview", () => {
-    expect(isPreview("product", stageById("plan"), "findings", true)).toBe(true);
-    expect(isPreview("product", stageById("plan"), "findings", false)).toBe(false);
-    expect(isPreview("product", stageById("findings"), "findings", true)).toBe(false);
-    expect(isPreview("developer", stageById("plan"), "findings", true)).toBe(false);
+  it("summarises the current step and status for the rail", () => {
+    expect(stageSummary("discovery-submitted")).toBe("Step 1: Discovery — Discovery submitted, under review");
+    expect(stageSummary("findings")).toBe("Step 2: Findings & options — Findings & options, open for comments");
+    expect(stageSummary("agreed")).toBe("Step 4: Summary — Plan agreed");
   });
 
   it("marks stages done, current and upcoming", () => {

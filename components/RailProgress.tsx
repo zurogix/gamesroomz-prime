@@ -4,7 +4,7 @@ export type ProgressLine = { label: string; percent: number; detail?: string };
 export default function RailProgress({ lines }: { lines: ProgressLine[] }) {
   return (
     <section>
-      <span className="label">Progress</span>
+      <span className="label">Completion</span>
       {lines.map((line) => (
         <div key={line.label} className="rail-progress-item">
           <div className="progress-line">
