@@ -146,7 +146,7 @@ kbd{font:500 10.5px var(--mono);padding:1px 5px;border:1px solid var(--line-2);b
 .icon-btn:hover{background:var(--surface-2)}
 .field{display:flex;flex-direction:column;gap:5px}
 .field label,.field-title{font-size:12px;font-weight:600;color:var(--ink-2)}
-textarea,input[type=text],input[type=number],select{width:100%;padding:8px 10px;border:1px solid var(--line-2);border-radius:8px;background:var(--surface);font-size:13.5px;line-height:1.45}
+textarea,input[type=text],input[type=number],input[type=email],input[type=password],select{width:100%;padding:8px 10px;border:1px solid var(--line-2);border-radius:8px;background:var(--surface);font-size:13.5px;line-height:1.45}
 textarea{min-height:76px;resize:vertical}
 /* Inputs without a text type (url, untyped) take the theme colours too. */
 input[type=url],input:not([type]){background:var(--surface);color:var(--ink);border-color:var(--line-2)}
@@ -381,6 +381,14 @@ td.n{font:500 13px var(--mono);text-align:right}
   .page-main{padding:20px 16px 48px}
   .app-header .user-badge{margin-left:0;width:100%}
 }
+
+.import-banner{display:flex;flex-direction:column;gap:10px;margin:0;padding:14px 18px;border-radius:12px;background:var(--tint);color:var(--tint-ink)}
+.import-banner a{color:var(--primary)}
+.import-banner .hint,.import-banner label{color:var(--tint-ink)}
+.invite-form .btn.primary{align-self:flex-start}
+.history-table{min-width:0}
+.history-table tbody tr{cursor:default}
+.history-table tbody tr:hover td{background:none}
 
 @media print{
   :root,:root:not([data-theme="light"]),:root[data-theme="dark"]{

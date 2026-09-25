@@ -20,17 +20,17 @@ import { AssessmentState } from "@/lib/types";
 import { SaveStatusContext } from "@/components/SaveStatusContext";
 import { CurrentUser } from "@/components/UserBadge";
 import ConflictBanner from "./ConflictBanner";
+import VersionHistory from "./VersionHistory";
 
 type Props = {
   gameId: string;
   initialState: AssessmentState;
   initialVersion: number;
   user: CurrentUser;
-  historySlot?: React.ReactNode;
 };
 
 /** The assessment workspace for one game: edits in memory, saves through the API. */
-export default function PortalWorkspace({ gameId, initialState, initialVersion, user, historySlot }: Props) {
+export default function PortalWorkspace({ gameId, initialState, initialVersion, user }: Props) {
   const {
     state, updateGameInfo, updatePrimeTargets, updateAnswer,
     updateEngineAssessment, updateEngineOption, updatePlan, setStatus, toggleCheck,
@@ -116,7 +116,7 @@ export default function PortalWorkspace({ gameId, initialState, initialVersion, 
           onStatus={setStatus}
           onToggleCheck={toggleCheck}
           allowedStatuses={allowedStatuses(user.role)}
-          historySlot={historySlot}
+          historySlot={<VersionHistory gameId={gameId} refreshKey={`${state.status}:${saveStatus.savedAt ?? 0}`} />}
         />
       );
     }

@@ -13,6 +13,7 @@ export default function AppHeader({ user }: { user: CurrentUser }) {
       </a>
       <nav className="app-nav" aria-label="Main">
         <a href="/">Games</a>
+        {user.role === "product" && <a href="/settings/team">Team</a>}
       </nav>
       <UserBadge user={user} />
     </header>

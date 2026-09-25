@@ -15,7 +15,8 @@ export type SaveOutcome =
 
 /**
  * Saves a full state if it was based on the stored version and the role may make the change.
- * The version check is repeated inside the update so two concurrent saves cannot both win.
+ * The version check is repeated inside the update so two concurrent saves cannot both win,
+ * and a status change writes a snapshot in the same transaction.
  */
 export async function saveAssessment(profile: SessionProfile, gameId: string, state: AssessmentState, version: number): Promise<SaveOutcome> {
   const row = await db.assessment.findFirst({
@@ -36,6 +37,12 @@ export async function saveAssessment(profile: SessionProfile, gameId: string, st
       data: { state: next as Prisma.InputJsonValue, status: toDbStatus(next.status), version: { increment: 1 }, updatedById: profile.id },
     });
     if (updated.count === 0) return { kind: "conflict" };
+    // A status change records a saved version of the state as it was saved.
+    if (previous.status !== next.status) {
+      await tx.assessmentSnapshot.create({
+        data: { assessmentId: row.id, status: toDbStatus(next.status), state: next as Prisma.InputJsonValue, createdById: profile.id },
+      });
+    }
     const saved = await tx.assessment.findUniqueOrThrow({ where: { id: row.id }, select: { version: true, updatedAt: true } });
     return { kind: "saved", version: saved.version, updatedAt: saved.updatedAt.toISOString() };
   });

@@ -16,3 +16,16 @@ export const saveAssessmentSchema = z.object({
   state: assessmentStateSchema,
   version: z.number().int().min(1),
 });
+
+export const roleSchema = z.enum(["product", "developer"]);
+
+export const inviteMemberSchema = z.object({
+  email: z.email("Enter a valid email address.").max(254),
+  name: z.string().trim().min(1, "Enter a name.").max(120),
+  role: roleSchema,
+});
+
+export const updateMemberSchema = z.union([
+  z.object({ role: roleSchema }).strict(),
+  z.object({ removed: z.literal(true) }).strict(),
+]);

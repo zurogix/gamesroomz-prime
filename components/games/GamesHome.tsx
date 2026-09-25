@@ -6,11 +6,12 @@ import type { GameSummary } from "@/lib/server/games";
 import AppHeader from "@/components/AppHeader";
 import { CurrentUser } from "@/components/UserBadge";
 import GameRow from "./GameRow";
+import ImportDraftBanner from "./ImportDraftBanner";
 import NewGameForm from "./NewGameForm";
 
-type Props = { user: CurrentUser; initialGames: GameSummary[]; banner?: React.ReactNode };
+type Props = { user: CurrentUser; initialGames: GameSummary[] };
 
-export default function GamesHome({ user, initialGames, banner }: Props) {
+export default function GamesHome({ user, initialGames }: Props) {
   const [games, setGames] = useState(initialGames);
   const canManage = user.role === "product";
 
@@ -24,7 +25,7 @@ export default function GamesHome({ user, initialGames, banner }: Props) {
       <AppHeader user={user} />
       <main className="page-main">
         <h1>Games</h1>
-        {banner}
+        <ImportDraftBanner user={user} games={games} onImported={refresh} />
         {canManage && <NewGameForm />}
         {games.length === 0 ? (
           <p className="hint">{canManage ? "No games yet. Create the first one above." : "No games yet. The product team will add them."}</p>
