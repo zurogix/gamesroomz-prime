@@ -1,5 +1,5 @@
-import { forwardRef } from "react";
 import { emptyChoice, followUpVisible, isAnswered } from "@/lib/discoveryAnswers";
+import { questionElementId } from "@/lib/rail";
 import { DiscoveryQuestion, QuestionAnswer } from "@/lib/discoveryTypes";
 import BasisField from "./BasisField";
 import ChoiceGroup from "./ChoiceGroup";
@@ -15,13 +15,13 @@ type Props = {
   onChange: (update: (answer: QuestionAnswer) => QuestionAnswer) => void;
 };
 
-const DiscoveryQuestionCard = forwardRef<HTMLElement, Props>(function DiscoveryQuestionCard({ question: q, answer, onChange }, ref) {
+export default function DiscoveryQuestionCard({ question: q, answer, onChange }: Props) {
   const titleId = `q-${q.id}`;
   const patch = (p: Partial<QuestionAnswer>) => onChange((a) => ({ ...a, ...p }));
   const answered = isAnswered(q, answer);
 
   return (
-    <article ref={ref} className={`dq ${answered ? "answered" : ""}`} id={`question-${q.id}`}>
+    <article className={`dq ${answered ? "answered" : ""}`} id={questionElementId(q.id)} tabIndex={-1} aria-labelledby={titleId}>
       <header className="dq-head">
         <span className="dq-id">{q.id}</span>
         <div>
@@ -73,6 +73,4 @@ const DiscoveryQuestionCard = forwardRef<HTMLElement, Props>(function DiscoveryQ
       </div>
     </article>
   );
-});
-
-export default DiscoveryQuestionCard;
+}

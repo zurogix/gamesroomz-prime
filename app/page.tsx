@@ -8,11 +8,12 @@ import OverviewView from "@/components/OverviewView";
 import PlanDrawer from "@/components/PlanDrawer";
 import PlanView from "@/components/PlanView";
 import Sidebar from "@/components/Sidebar";
-import SummaryRail from "@/components/SummaryRail";
+import PageRail from "@/components/PageRail";
 import SummaryView from "@/components/SummaryView";
 import { useAssessment } from "@/hooks/useAssessment";
 import { useTheme } from "@/hooks/useTheme";
 import { DISCOVERY_QUESTIONS, sectionTitle } from "@/lib/discovery";
+import { focusQuestion, railKindFor } from "@/lib/rail";
 import { ASSESSMENT_SECTIONS, OVERVIEW, PLAN, SUMMARY } from "@/lib/sections";
 
 export default function HomePage() {
@@ -36,10 +37,12 @@ export default function HomePage() {
   const jumpToQuestion = useCallback((id: string) => {
     const question = DISCOVERY_QUESTIONS.find((q) => q.id === id);
     if (!question) return;
-    setView(sectionTitle(question.section));
+    const target = sectionTitle(question.section);
+    setView(target);
     setFocusId(id);
     setDrawerId(null);
-  }, []);
+    if (target === view) focusQuestion(id);
+  }, [view]);
 
   const openWorkstream = useCallback((id: string) => {
     setView(PLAN);
@@ -71,7 +74,7 @@ export default function HomePage() {
   }, []);
 
   const closeDrawer = useCallback(() => setDrawerId(null), []);
-  const showRail = view !== SUMMARY;
+  const showRail = railKindFor(view) !== "none";
 
   function renderView() {
     if (ASSESSMENT_SECTIONS.includes(view)) {
@@ -130,7 +133,7 @@ export default function HomePage() {
           {migrationNotice && <MigrationNotice onDismiss={dismissMigrationNotice} />}
           {renderView()}
         </main>
-        {showRail && <SummaryRail state={state} onJumpToQuestion={jumpToQuestion} onOpenWorkstream={openWorkstream} />}
+        <PageRail view={view} state={state} onJumpToQuestion={jumpToQuestion} onOpenWorkstream={openWorkstream} />
       </div>
       {drawerId && (
         <PlanDrawer plan={state.plan} engine={state.engineAssessment} openId={drawerId} onChange={updatePlan} onSelect={setDrawerId} onClose={closeDrawer} />

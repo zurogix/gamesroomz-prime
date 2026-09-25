@@ -1,34 +1,23 @@
 import { CSSProperties } from "react";
 import { planCoverage, totalPlanDays } from "@/lib/assessment";
-import { discoveryAttention, discoveryCoverage } from "@/lib/discoveryAnswers";
 import { scopeProfile } from "@/lib/scopeProfile";
 import { CLASSES, CLASS_LABEL, formatDays } from "@/lib/sections";
 import { AssessmentState } from "@/lib/types";
 
-type Props = {
-  state: AssessmentState;
-  onJumpToQuestion: (id: string) => void;
-  onOpenWorkstream: (id: string) => void;
-};
+type Props = { state: AssessmentState; onOpenWorkstream: (id: string) => void };
 
-const PREVIEW_LENGTH = 64;
 const tone = (c: string) => ({ "--c": c }) as CSSProperties;
 
-function preview(text: string) {
-  return text.length > PREVIEW_LENGTH ? text.slice(0, PREVIEW_LENGTH) + "…" : text;
-}
-
-export default function SummaryRail({ state, onJumpToQuestion, onOpenWorkstream }: Props) {
+/** Scope profile, planned effort and high-risk workstreams for the Conversion Plan. */
+export default function RailPlanSummary({ state, onOpenWorkstream }: Props) {
   const profile = scopeProfile(state.plan);
-  const attention = discoveryAttention(state.answers);
   const highRisk = state.plan.filter((w) => w.risk === "high");
-  const discoveryPct = discoveryCoverage(state.answers);
-  const planPct = planCoverage(state);
   const total = state.plan.length;
+  const planPct = planCoverage(state);
   const countFor = (c: string) => state.plan.filter((w) => w.classification === c).length;
 
   return (
-    <aside className="rail" aria-label="Live summary">
+    <>
       <section>
         <span className="label">Scope profile</span>
         <div className="rail-verdict">{profile.incomplete ?? `${total} workstreams classified`}</div>
@@ -44,31 +33,14 @@ export default function SummaryRail({ state, onJumpToQuestion, onOpenWorkstream 
       <section>
         <span className="label">Planned effort</span>
         <div className="big num">{formatDays(totalPlanDays(state))}<small>person-days</small></div>
-        <div className="progress-line"><span>Discovery</span><span className="num">{discoveryPct}%</span></div>
-        <div className="bar"><i style={{ width: `${discoveryPct}%` }} /></div>
-        <div className="progress-line"><span>Plan</span><span className="num">{planPct}%</span></div>
+        <div className="progress-line"><span>Plan detail</span><span className="num">{planPct}%</span></div>
         <div className="bar"><i style={{ width: `${planPct}%` }} /></div>
-      </section>
-
-      <section>
-        <span className="label">To follow up · {attention.length}</span>
-        <div className="att">
-          {attention.length === 0 && <span className="hint">Nothing noted yet.</span>}
-          {attention.map(({ question, reason }) => (
-            <button key={question.id} type="button" style={tone("var(--warn)")} onClick={() => onJumpToQuestion(question.id)}>
-              <i />
-              <span>
-                {question.id} · {reason}
-                <em>{preview(question.prompt)}</em>
-              </span>
-            </button>
-          ))}
-        </div>
       </section>
 
       <section>
         <span className="label">High-risk workstreams · {highRisk.length}</span>
         <div className="att">
+          {highRisk.length === 0 && <span className="hint">None marked high risk.</span>}
           {highRisk.map((w) => (
             <button key={w.id} type="button" style={tone("var(--risk-high)")} onClick={() => onOpenWorkstream(w.id)}>
               <i />
@@ -80,6 +52,6 @@ export default function SummaryRail({ state, onJumpToQuestion, onOpenWorkstream 
           ))}
         </div>
       </section>
-    </aside>
+    </>
   );
 }

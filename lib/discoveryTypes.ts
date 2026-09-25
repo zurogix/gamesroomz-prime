@@ -22,6 +22,10 @@ export type RowDef = { id: string; label: string; mode: ChoiceMode; options: Cho
 
 type QuestionBase = {
   id: string;
+  /** Short name shown in the "About this section" tips. */
+  title: string;
+  /** Why we ask — shown next to the title in the tips. */
+  why: string;
   section: string;
   prompt: string;
   helper?: string;
@@ -38,7 +42,7 @@ export type RowsQuestion = QuestionBase & { type: "rows"; rows: RowDef[] };
 export type OpenQuestion = QuestionBase & { type: "open" };
 export type DiscoveryQuestion = ChoiceQuestion | RowsQuestion | OpenQuestion;
 
-export type DiscoverySection = { id: string; title: string };
+export type DiscoverySection = { id: string; title: string; intro: string };
 
 export type ChoiceAnswer = { selected: string[]; other: string };
 export type FollowUpAnswer = ChoiceAnswer & { text: string };
