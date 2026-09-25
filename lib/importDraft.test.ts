@@ -31,7 +31,7 @@ describe("local-draft import", () => {
     expect(assessmentStateSchema.safeParse(state).success).toBe(true);
     expect(state?.gameInfo.developer).toBe("Porting team");
     expect(state?.engineAssessment.engineClassification).toBe("rewrite");
-    expect(state?.status).toBe("agreed");
+    expect(state?.status).toBe("discovery");
   });
 
   it("returns null when there is no draft or it cannot be read", () => {
@@ -39,16 +39,24 @@ describe("local-draft import", () => {
     expect(readImportableDraft(storageWith({ [STORAGE_KEY]: "{not json" }))).toBeNull();
   });
 
-  it("keeps product-only fields from the game when a developer imports", () => {
-    const current = { ...initialAssessment(), gameInfo: { ...initialAssessment().gameInfo, gameName: "Server name" }, status: "planning" as const };
-    const draft = { ...initialAssessment(), primeTargets: { ...current.primeTargets, fpsTarget: { state: "set" as const, value: "30" } }, status: "agreed" as const };
+  it("keeps the game's status and the parts the role may not change", () => {
+    const current = { ...initialAssessment(), gameInfo: { gameName: "Server name", developer: "" }, status: "discovery" as const };
+    const draft = {
+      ...initialAssessment(),
+      gameInfo: { gameName: "Draft name", developer: "Porting team" },
+      primeTargets: { ...current.primeTargets, fpsTarget: { state: "set" as const, value: "30" } },
+      plan: current.plan.map((w, i) => (i === 0 ? { ...w, whyChange: "Old Unity" } : w)),
+      status: "agreed" as const,
+    };
     const prepared = prepareImport(draft, current, "developer");
 
     expect(prepared.primeTargets).toEqual(current.primeTargets);
-    expect(prepared.status).toBe("planning");
-    expect(prepared.gameInfo.gameName).toBe("Server name");
+    expect(prepared.plan).toEqual(current.plan);
+    expect(prepared.status).toBe("discovery");
+    expect(prepared.gameInfo).toEqual({ gameName: "Server name", developer: "Porting team" });
     expect(assessmentChangeError("developer", current, prepared)).toBeNull();
-    expect(prepareImport(draft, current, "product").status).toBe("agreed");
+    expect(prepareImport(draft, current, "product").primeTargets.fpsTarget.value).toBe("30");
+    expect(prepareImport(draft, current, "product").status).toBe("discovery");
   });
 
   it("clears both local draft keys", () => {

@@ -31,6 +31,6 @@ export async function listSnapshots(gameId: string): Promise<SnapshotEntry[] | n
     status: fromDbStatus(r.status),
     createdBy: r.createdBy.name,
     note: r.note,
-    state: hydrateAssessment(r.state as Prisma.JsonObject),
+    state: { ...hydrateAssessment(r.state as Prisma.JsonObject), status: fromDbStatus(r.status) },
   }));
 }

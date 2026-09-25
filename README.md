@@ -74,16 +74,26 @@ Each game has one assessment, stored as JSON in Postgres with an optimistic-lock
 first, the portal stops autosaving and asks you to reload instead of overwriting. Every status change saves a
 version that can be exported as Markdown from the Management Summary. Deletes are soft (`deletedAt`).
 
-Roles: **product** can change everything, including Prime targets and the "Changes requested" and "Agreed" statuses;
-**developer** fills in discovery and the plan.
+Roles: **product** can change everything at any stage, including the Prime targets. **Developers** can edit
+discovery answers and the developer / team only while discovery is in progress, the engine comparison while findings
+or the plan are open, and the plan and its confirmations only while the plan is in progress. The save API rejects
+anything else with 403.
 
 A draft saved in the browser by the earlier, local-only version can be imported from the games list after signing in.
 
 ## Conversion workflow
 
-1. The product team records the Prime targets.
-2. The developer answers the discovery form, noting what still needs checking.
-3. Each workstream is classified as Reuse, Extend, Refactor, Rewrite, New or Remove.
-4. The developer documents the proposed implementation, components, deliverable, dependencies, risk and effort, and
-   compares the Multiplayer Engine 2.0 paths.
-5. The Management Summary shows the scope profile; optional enhancements are kept separate before the plan is agreed.
+Four stages, shown in a stepper at the top of each game:
+
+1. **Discovery (A–I)** — the product team records the Prime targets; the developer answers the discovery form and
+   submits it (Discovery in progress → Discovery submitted — under review). Product then publishes findings or
+   reopens discovery for follow-up questions.
+2. **Findings & options** — product publishes findings; the developer responds, including the Multiplayer Engine 2.0
+   comparison. Product then opens the plan (Findings & options — open for comments → Conversion plan in progress).
+3. **Conversion plan** — pre-filled workstreams the developer confirms or edits, then submits with the confirmations
+   (→ Plan submitted — under review). Product agrees the plan or requests changes.
+4. **Summary** — the Management Summary, open to developers once the plan is agreed (→ Plan agreed). Product can
+   reopen the plan.
+
+Developers see a stage once the workflow reaches it; the product team can open every stage at any time (marked
+"Preview" before it is reached).

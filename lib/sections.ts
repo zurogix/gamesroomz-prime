@@ -1,9 +1,10 @@
 import { DISCOVERY_SECTIONS } from "./discovery";
-import { AssessmentState, Classification } from "./types";
+import { Classification } from "./types";
 
 export type ImpactClass = Exclude<Classification, "">;
 
 export const OVERVIEW = "Overview";
+export const FINDINGS = "Findings & Options";
 export const PLAN = "Conversion Plan";
 export const SUMMARY = "Management Summary";
 
@@ -38,15 +39,6 @@ export const RECOMMENDED_PATH_LABEL = {
   shared: "Shared Multiplayer Engine 2.0",
   separate: "Separate Prime Multiplayer Engine",
 } as const;
-
-export const STATUS_STEPS: { value: AssessmentState["status"]; label: string }[] = [
-  { value: "draft", label: "Draft" },
-  { value: "assessment-complete", label: "Assessment complete" },
-  { value: "planning", label: "Planning" },
-  { value: "submitted", label: "Submitted for review" },
-  { value: "changes-requested", label: "Changes requested" },
-  { value: "agreed", label: "Agreed" },
-];
 
 export const CONFIRMATIONS = [
   "The discovery answers describe the current game as it is built today, with open items noted.",

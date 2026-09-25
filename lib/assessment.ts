@@ -1,6 +1,7 @@
-import { AssessmentState, AssessmentStatus, SavedDraft, Workstream } from "./types";
+import { AssessmentState, SavedDraft, Workstream } from "./types";
 import { planTemplate } from "./planTemplate";
-import { CLASSES, CONFIRMATIONS, ImpactClass, STATUS_STEPS } from "./sections";
+import { CLASSES, CONFIRMATIONS, ImpactClass } from "./sections";
+import { DEFAULT_STATUS, hydrateStatus } from "./stages";
 import { applyEngineEstimate, emptyEngineAssessment } from "./engine";
 import { DISCOVERY_QUESTIONS } from "./discovery";
 import { hydrateAnswer } from "./discoveryAnswers";
@@ -17,7 +18,7 @@ export const initialAssessment = (): AssessmentState => ({
   answers: {},
   engineAssessment: emptyEngineAssessment(),
   plan: planTemplate.map((item) => ({ ...item })),
-  status: "draft",
+  status: DEFAULT_STATUS,
   checks: CONFIRMATIONS.map(() => false),
 });
 
@@ -35,11 +36,6 @@ function hydrateWorkstream(template: Workstream, saved: Partial<Workstream> | un
     classification: migrateClassification(saved?.classification ?? template.classification),
   };
   return replaceLegacyDefaults(merged, template);
-}
-
-function hydrateStatus(status: string | undefined): AssessmentStatus {
-  if (status === "approved") return "agreed";
-  return STATUS_STEPS.find((s) => s.value === status)?.value ?? "draft";
 }
 
 function hydrateAnswers(saved: SavedDraft["answers"]): AssessmentState["answers"] {

@@ -10,7 +10,7 @@ export default function EngineWorkstreamFacts({ workstream, engine }: Props) {
       <dt>Person-days</dt>
       <dd>
         <span className="num">{formatDays(workstream.personDays)}</span>
-        <small className="hint"> From Multiplayer Engine 2.0 comparison</small>
+        <small className="hint"> From the Multiplayer Engine 2.0 comparison in Findings & options</small>
       </dd>
       <dt>Technical risk</dt>
       <dd className="cap">{workstream.risk}</dd>

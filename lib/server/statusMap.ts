@@ -2,11 +2,11 @@ import { AssessmentStatus as DbStatus } from "@prisma/client";
 import type { AssessmentStatus } from "@/lib/types";
 
 const TO_DB: Record<AssessmentStatus, DbStatus> = {
-  draft: DbStatus.draft,
-  "assessment-complete": DbStatus.assessment_complete,
-  planning: DbStatus.planning,
-  submitted: DbStatus.submitted,
-  "changes-requested": DbStatus.changes_requested,
+  discovery: DbStatus.discovery,
+  "discovery-submitted": DbStatus.discovery_submitted,
+  findings: DbStatus.findings,
+  plan: DbStatus.plan,
+  "plan-submitted": DbStatus.plan_submitted,
   agreed: DbStatus.agreed,
 };
 

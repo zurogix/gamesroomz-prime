@@ -3,19 +3,24 @@
 import { useCallback, useEffect, useState } from "react";
 import CommandPalette, { PaletteTarget } from "@/components/CommandPalette";
 import DiscoverySection from "@/components/DiscoverySection";
+import FindingsView from "@/components/FindingsView";
 import OverviewView from "@/components/OverviewView";
 import PlanDrawer from "@/components/PlanDrawer";
 import PlanView from "@/components/PlanView";
 import Sidebar from "@/components/Sidebar";
 import PageRail from "@/components/PageRail";
 import SummaryView from "@/components/SummaryView";
+import LockedStage from "@/components/stages/LockedStage";
+import ProgressStepper from "@/components/stages/ProgressStepper";
+import StageActions from "@/components/stages/StageActions";
 import { useAssessmentEditor } from "@/hooks/useAssessmentEditor";
 import { useAssessmentSync } from "@/hooks/useAssessmentSync";
 import { useTheme } from "@/hooks/useTheme";
 import { DISCOVERY_QUESTIONS, sectionTitle } from "@/lib/discovery";
 import { focusQuestion, railKindFor } from "@/lib/rail";
-import { allowedStatuses, canEditPrimeTargets } from "@/lib/permissions";
-import { ASSESSMENT_SECTIONS, OVERVIEW, PLAN, SUMMARY } from "@/lib/sections";
+import { canEdit, canEditPrimeTargets, isProduct } from "@/lib/permissions";
+import { ASSESSMENT_SECTIONS, FINDINGS, OVERVIEW, PLAN, SUMMARY } from "@/lib/sections";
+import { currentStage, isPreview, Stage, stageById, stageForView, stageVisible } from "@/lib/stages";
 import { AssessmentState } from "@/lib/types";
 import { SaveStatusContext } from "@/components/SaveStatusContext";
 import { CurrentUser } from "@/components/UserBadge";
@@ -44,12 +49,20 @@ export default function PortalWorkspace({ gameId, initialState, initialVersion, 
   const [drawerId, setDrawerId] = useState<string | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
 
+  const { role } = user;
+  const { status } = state;
+  const planOpen = stageVisible(role, stageById("plan"), status);
+  const viewStage = stageForView(view);
+  const locked = viewStage !== null && !stageVisible(role, viewStage, status);
+
   const navigate = useCallback((next: string) => {
     setView(next);
     setFocusId(null);
     setDrawerId(null);
     window.scrollTo({ top: 0 });
   }, []);
+
+  const openStage = useCallback((stage: Stage) => navigate(stage.view), [navigate]);
 
   const jumpToQuestion = useCallback((id: string) => {
     const question = DISCOVERY_QUESTIONS.find((q) => q.id === id);
@@ -85,9 +98,14 @@ export default function PortalWorkspace({ gameId, initialState, initialVersion, 
   }, []);
 
   const closeDrawer = useCallback(() => setDrawerId(null), []);
-  const showRail = railKindFor(view) !== "none";
+  const showRail = !locked && railKindFor(view) !== "none";
+
+  /** Stage actions appear in the header of the stage the assessment is currently in. */
+  const actionsFor = (stage: Stage) =>
+    currentStage(status).id === stage.id ? <StageActions state={state} role={role} onStatus={setStatus} onToggleCheck={toggleCheck} /> : null;
 
   function renderView() {
+    if (locked && viewStage) return <LockedStage stage={viewStage} />;
     if (ASSESSMENT_SECTIONS.includes(view)) {
       return (
         <DiscoverySection
@@ -96,6 +114,21 @@ export default function PortalWorkspace({ gameId, initialState, initialVersion, 
           focusId={focusId}
           onAnswer={updateAnswer}
           onNavigate={navigate}
+          canEditAnswers={canEdit(role, status, "answers")}
+          showWhatHappensNext={role === "developer" && status === "discovery-submitted"}
+          stageActions={actionsFor(stageById("discovery"))}
+        />
+      );
+    }
+    if (view === FINDINGS) {
+      return (
+        <FindingsView
+          engine={state.engineAssessment}
+          isProduct={isProduct(role)}
+          canEditEngine={canEdit(role, status, "engine")}
+          onEngineChange={updateEngineAssessment}
+          onEngineOptionChange={updateEngineOption}
+          stageActions={actionsFor(stageById("findings"))}
         />
       );
     }
@@ -104,9 +137,10 @@ export default function PortalWorkspace({ gameId, initialState, initialVersion, 
         <PlanView
           state={state}
           onOpen={setDrawerId}
-          onEngineChange={updateEngineAssessment}
-          onEngineOptionChange={updateEngineOption}
           onNavigate={navigate}
+          canEditPlan={canEdit(role, status, "plan")}
+          summaryOpen={stageVisible(role, stageById("summary"), status)}
+          stageActions={actionsFor(stageById("plan"))}
         />
       );
     }
@@ -115,20 +149,22 @@ export default function PortalWorkspace({ gameId, initialState, initialVersion, 
         <SummaryView
           state={state}
           onOpenWorkstream={openWorkstream}
-          onStatus={setStatus}
-          onToggleCheck={toggleCheck}
-          allowedStatuses={allowedStatuses(user.role)}
-          historySlot={<VersionHistory gameId={gameId} refreshKey={`${state.status}:${saveStatus.savedAt ?? 0}`} />}
+          stageActions={actionsFor(stageById("summary"))}
+          historySlot={<VersionHistory gameId={gameId} refreshKey={`${status}:${saveStatus.savedAt ?? 0}`} />}
         />
       );
     }
     return (
       <OverviewView
         state={state}
+        role={role}
         onGameInfo={updateGameInfo}
         onPrimeTargets={updatePrimeTargets}
         onNavigate={navigate}
-        canEditTargets={canEditPrimeTargets(user.role)}
+        onOpenStage={openStage}
+        canEditTargets={canEditPrimeTargets(role)}
+        canEditTeam={canEdit(role, status, "developerTeam")}
+        canEditAnswers={canEdit(role, status, "answers")}
       />
     );
   }
@@ -147,12 +183,24 @@ export default function PortalWorkspace({ gameId, initialState, initialVersion, 
         />
         <main className="main">
           {saveStatus.state === "conflict" && <ConflictBanner onReload={onReload} />}
+          <ProgressStepper status={status} role={role} activeStage={viewStage} onOpen={openStage} />
+          {viewStage && isPreview(role, viewStage, status) && (
+            <p className="preview-note"><span className="preview-tag">Preview</span> This stage is not open to the developer yet.</p>
+          )}
           {renderView()}
         </main>
-        <PageRail view={view} state={state} onJumpToQuestion={jumpToQuestion} onOpenWorkstream={openWorkstream} />
+        {showRail && <PageRail view={view} state={state} onJumpToQuestion={jumpToQuestion} onOpenWorkstream={openWorkstream} />}
       </div>
-      {drawerId && (
-        <PlanDrawer plan={state.plan} engine={state.engineAssessment} openId={drawerId} onChange={updatePlan} onSelect={setDrawerId} onClose={closeDrawer} />
+      {drawerId && planOpen && (
+        <PlanDrawer
+          plan={state.plan}
+          engine={state.engineAssessment}
+          openId={drawerId}
+          onChange={updatePlan}
+          onSelect={setDrawerId}
+          onClose={closeDrawer}
+          readOnly={!canEdit(role, status, "plan")}
+        />
       )}
       {paletteOpen && <CommandPalette plan={state.plan} onPick={pick} onClose={() => setPaletteOpen(false)} />}
     </SaveStatusContext.Provider>

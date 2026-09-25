@@ -128,7 +128,7 @@ describe("v1 → v2 migration", () => {
     expect(state.engineAssessment.rewriteReason).toBe("Photon everywhere");
     expect(state.engineAssessment).not.toHaveProperty("strategy");
     expect(state.engineAssessment).not.toHaveProperty("replaceReason");
-    expect(state.status).toBe("agreed");
+    expect(state.status).toBe("discovery");
   });
 
   it("maps every old engine strategy", () => {

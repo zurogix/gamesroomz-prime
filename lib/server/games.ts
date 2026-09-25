@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { hydrateAssessment, initialAssessment } from "@/lib/assessment";
+import { DEFAULT_STATUS } from "@/lib/stages";
 import type { AssessmentState, AssessmentStatus } from "@/lib/types";
 import { db } from "./db";
 import { GAME_LIST_SELECT } from "./gameListSelect";
@@ -34,7 +35,7 @@ export async function listGames(): Promise<GameSummary[]> {
   return games.map((g) => ({
     id: g.id,
     name: g.name,
-    status: g.assessment ? fromDbStatus(g.assessment.status) : "draft",
+    status: g.assessment ? fromDbStatus(g.assessment.status) : DEFAULT_STATUS,
     updatedAt: (g.assessment?.updatedAt ?? g.updatedAt).toISOString(),
     updatedBy: g.assessment?.updatedBy.name ?? "",
   }));
@@ -78,9 +79,10 @@ export async function loadAssessment(gameId: string): Promise<LoadedAssessment |
     include: { game: { select: { name: true } }, updatedBy: { select: { name: true } } },
   });
   if (!row) return null;
-  // The game name is owned by the Game record; older stored states are filled in by hydration.
+  // The game name is owned by the Game record and the status column is the source of truth;
+  // older stored states are filled in by hydration.
   const hydrated = hydrateAssessment(row.state as Prisma.JsonObject);
-  const state = { ...hydrated, gameInfo: { ...hydrated.gameInfo, gameName: row.game.name } };
+  const state = { ...hydrated, status: fromDbStatus(row.status), gameInfo: { ...hydrated.gameInfo, gameName: row.game.name } };
   return {
     gameId,
     gameName: row.game.name,

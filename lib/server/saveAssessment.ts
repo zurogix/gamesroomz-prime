@@ -5,7 +5,7 @@ import type { AssessmentState } from "@/lib/types";
 import { isVersionConflict } from "@/lib/versioning";
 import type { SessionProfile } from "./auth";
 import { db } from "./db";
-import { toDbStatus } from "./statusMap";
+import { fromDbStatus, toDbStatus } from "./statusMap";
 
 export type SaveOutcome =
   | { kind: "saved"; version: number; updatedAt: string }
@@ -16,7 +16,8 @@ export type SaveOutcome =
 /**
  * Saves a full state if it was based on the stored version and the role may make the change.
  * The version check is repeated inside the update so two concurrent saves cannot both win,
- * and a status change writes a snapshot in the same transaction.
+ * and a status change writes a snapshot in the same transaction. Changes outside the role's
+ * editable areas for the stored status, and status changes that are not allowed, are rejected.
  */
 export async function saveAssessment(profile: SessionProfile, gameId: string, state: AssessmentState, version: number): Promise<SaveOutcome> {
   const row = await db.assessment.findFirst({
@@ -26,7 +27,8 @@ export async function saveAssessment(profile: SessionProfile, gameId: string, st
   if (!row) return { kind: "not-found" };
   if (isVersionConflict(row.version, version)) return { kind: "conflict" };
 
-  const previous = hydrateAssessment(row.state as Prisma.JsonObject);
+  // The status column, not the status inside the saved JSON, decides what may change.
+  const previous = { ...hydrateAssessment(row.state as Prisma.JsonObject), status: fromDbStatus(row.status) };
   const forbidden = assessmentChangeError(profile.role, previous, state);
   if (forbidden) return { kind: "forbidden", message: forbidden };
 

@@ -9,7 +9,7 @@ const short = z.string().max(SHORT_MAX);
 const days = z.number().finite().min(0).max(10_000);
 
 export const classificationSchema = z.enum(["reuse", "extend", "refactor", "rewrite", "new", "remove", ""]);
-export const statusSchema = z.enum(["draft", "assessment-complete", "planning", "submitted", "changes-requested", "agreed"]);
+export const statusSchema = z.enum(["discovery", "discovery-submitted", "findings", "plan", "plan-submitted", "agreed"]);
 const riskSchema = z.enum(["low", "medium", "high"]);
 
 const choiceAnswerSchema = z.object({ selected: z.array(short).max(50), other: text });

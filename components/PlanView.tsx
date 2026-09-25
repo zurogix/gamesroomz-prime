@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { engineAssessmentIssues, planFieldsDone, PLAN_FIELD_COUNT, totalPlanDays } from "@/lib/assessment";
-import { formatDays, SUMMARY } from "@/lib/sections";
-import { AssessmentState, EngineOptionEstimate, MultiplayerEngineAssessment, Workstream } from "@/lib/types";
-import MultiplayerEnginePanel from "./MultiplayerEnginePanel";
+import { ReactNode, useState } from "react";
+import { planFieldsDone, PLAN_FIELD_COUNT, totalPlanDays } from "@/lib/assessment";
+import { FINDINGS, formatDays, SUMMARY } from "@/lib/sections";
+import { AssessmentState, Workstream } from "@/lib/types";
 import PageHeader from "./PageHeader";
 import PlanTableRow from "./PlanTableRow";
 
@@ -13,9 +12,10 @@ type SortKey = "title" | "classification" | "risk" | "scopeType" | "personDays" 
 type Props = {
   state: AssessmentState;
   onOpen: (id: string) => void;
-  onEngineChange: (patch: Partial<MultiplayerEngineAssessment>) => void;
-  onEngineOptionChange: (option: "sharedCore" | "separatePrime", patch: Partial<EngineOptionEstimate>) => void;
   onNavigate: (view: string) => void;
+  canEditPlan: boolean;
+  summaryOpen: boolean;
+  stageActions?: ReactNode;
 };
 
 const RISK_ORDER = { low: 0, medium: 1, high: 2 };
@@ -41,7 +41,7 @@ function sortValue(w: Workstream, key: SortKey): string | number {
   return w[key];
 }
 
-export default function PlanView({ state, onOpen, onEngineChange, onEngineOptionChange, onNavigate }: Props) {
+export default function PlanView({ state, onOpen, onNavigate, canEditPlan, summaryOpen, stageActions }: Props) {
   const [sort, setSort] = useState<{ key: SortKey | null; dir: number }>({ key: null, dir: 1 });
   const [grouped, setGrouped] = useState(false);
 
@@ -56,14 +56,14 @@ export default function PlanView({ state, onOpen, onEngineChange, onEngineOption
 
   return (
     <>
-      <PageHeader title="Conversion Plan" crumb={crumb} />
+      <PageHeader title="Conversion Plan" crumb={crumb} actions={stageActions} />
       <div className="content">
         <div className="toolbar">
           <div className="seg" role="group" aria-label="Grouping">
             <button type="button" className={!grouped ? "on" : ""} aria-pressed={!grouped} onClick={() => setGrouped(false)}>All workstreams</button>
             <button type="button" className={grouped ? "on" : ""} aria-pressed={grouped} onClick={() => setGrouped(true)}>Mandatory vs enhancement</button>
           </div>
-          <span className="hint">Click a row to edit it. Click a column header to sort.</span>
+          <span className="hint">{canEditPlan ? "Click a row to edit it." : "Click a row to see its details."} Click a column header to sort.</span>
         </div>
 
         <div className="table-wrap">
@@ -102,18 +102,14 @@ export default function PlanView({ state, onOpen, onEngineChange, onEngineOption
           </table>
         </div>
 
-        <div id="engine-options">
-          <MultiplayerEnginePanel
-            value={state.engineAssessment}
-            issues={engineAssessmentIssues(state.engineAssessment)}
-            onChange={onEngineChange}
-            onOptionChange={onEngineOptionChange}
-          />
-        </div>
+        <p className="hint">
+          Multiplayer Engine 2.0 days and risk come from the engine comparison in{" "}
+          <button type="button" className="link-btn" onClick={() => onNavigate(FINDINGS)}>Findings &amp; options</button>.
+        </p>
 
         <div className="pager">
           <span className="hint">{incomplete} workstreams with details still to add</span>
-          <button type="button" className="btn primary" onClick={() => onNavigate(SUMMARY)}>Generate management summary →</button>
+          {summaryOpen && <button type="button" className="btn primary" onClick={() => onNavigate(SUMMARY)}>Management summary →</button>}
         </div>
       </div>
     </>

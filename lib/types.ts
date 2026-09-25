@@ -7,7 +7,7 @@ export type Category = "game" | "platform";
 export type RecommendedPath = "shared" | "separate" | "";
 export type SharedCodeLevel = "high" | "medium" | "low" | "";
 export type CodebaseDecision = "shared" | "separate" | "undecided" | "";
-export type AssessmentStatus = "draft" | "assessment-complete" | "planning" | "submitted" | "changes-requested" | "agreed";
+export type AssessmentStatus = "discovery" | "discovery-submitted" | "findings" | "plan" | "plan-submitted" | "agreed";
 
 /** "agree-with-developer" is offered only for the Unity version and Android API level. */
 export type TargetState = "set" | "not-decided" | "agree-with-developer" | "";

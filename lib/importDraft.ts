@@ -1,5 +1,6 @@
 import { LEGACY_STORAGE_KEY, readDraft, STORAGE_KEY } from "./draftStorage";
-import { allowedStatuses, canEditPrimeTargets, Role } from "./permissions";
+import { applyEngineEstimate } from "./engine";
+import { canEdit, Role } from "./permissions";
 import { assessmentStateSchema } from "./schemas/assessment";
 import type { AssessmentState } from "./types";
 
@@ -14,16 +15,21 @@ export function readImportableDraft(storage: DraftStorage): AssessmentState | nu
 }
 
 /**
- * The state to save when importing into a game. Parts the role may not change keep the
- * game's current values, so a developer's import is never rejected for product-only fields.
+ * The state to save when importing into a game. The game keeps its status (it changes only through
+ * the stage actions), and parts the role may not change in that status keep the game's current values,
+ * so an import is never rejected for locked areas.
  */
 export function prepareImport(draft: AssessmentState, current: AssessmentState, role: Role): AssessmentState {
-  const status = allowedStatuses(role).includes(draft.status) || draft.status === current.status ? draft.status : current.status;
+  const pick = <T,>(area: Parameters<typeof canEdit>[2], fromDraft: T, fromCurrent: T) => (canEdit(role, current.status, area) ? fromDraft : fromCurrent);
+  const engineAssessment = pick("engine", draft.engineAssessment, current.engineAssessment);
   return {
-    ...draft,
-    gameInfo: { ...draft.gameInfo, gameName: current.gameInfo.gameName },
-    primeTargets: canEditPrimeTargets(role) ? draft.primeTargets : current.primeTargets,
-    status,
+    ...current,
+    gameInfo: { gameName: current.gameInfo.gameName, developer: pick("developerTeam", draft.gameInfo.developer, current.gameInfo.developer) },
+    primeTargets: pick("primeTargets", draft.primeTargets, current.primeTargets),
+    answers: pick("answers", draft.answers, current.answers),
+    engineAssessment,
+    plan: applyEngineEstimate(pick("plan", draft.plan, current.plan), engineAssessment),
+    checks: pick("checks", draft.checks, current.checks),
   };
 }
 

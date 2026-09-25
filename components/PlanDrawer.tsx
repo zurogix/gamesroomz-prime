@@ -17,6 +17,7 @@ type Props = {
   onChange: (id: string, patch: Partial<Workstream>) => void;
   onSelect: (id: string) => void;
   onClose: () => void;
+  readOnly: boolean;
 };
 
 const TABS: { key: DrawerTab; label: string }[] = [
@@ -26,7 +27,7 @@ const TABS: { key: DrawerTab; label: string }[] = [
   { key: "effort", label: "Effort & risk" },
 ];
 
-export default function PlanDrawer({ plan, engine, openId, onChange, onSelect, onClose }: Props) {
+export default function PlanDrawer({ plan, engine, openId, onChange, onSelect, onClose, readOnly }: Props) {
   const [tab, setTab] = useState<DrawerTab>("overview");
   const index = plan.findIndex((w) => w.id === openId);
   const w = plan[index];
@@ -65,9 +66,9 @@ export default function PlanDrawer({ plan, engine, openId, onChange, onSelect, o
             </button>
           ))}
         </div>
-        <div className="drawer-body">
+        <fieldset className="bare-fieldset drawer-body" disabled={readOnly}>
           <PlanDrawerFields workstream={w} engine={engine} tab={tab} onChange={(patch) => onChange(w.id, patch)} />
-        </div>
+        </fieldset>
         <div className="drawer-foot">
           <button type="button" className="btn" disabled={index === 0} onClick={() => step(-1)}>← Previous</button>
           <button type="button" className="btn" disabled={index === plan.length - 1} onClick={() => step(1)}>Next workstream →</button>

@@ -4,8 +4,8 @@ import { discoveryCoverage } from "@/lib/discoveryAnswers";
 import { describeModes } from "@/lib/primeTargets";
 import { scopeProfile } from "@/lib/scopeProfile";
 import { CLASSES, CLASS_LABEL, CONFIRMATIONS, formatDays } from "@/lib/sections";
+import { statusLabel } from "@/lib/stages";
 import { AssessmentState } from "@/lib/types";
-import AgreementTimeline from "./AgreementTimeline";
 import EffortChart from "./EffortChart";
 import EngineSummaryCard from "./EngineSummaryCard";
 import ExportMenu from "./ExportMenu";
@@ -16,13 +16,11 @@ import ScopeProfileCard from "./ScopeProfileCard";
 type Props = {
   state: AssessmentState;
   onOpenWorkstream: (id: string) => void;
-  onStatus: (status: AssessmentState["status"]) => void;
-  onToggleCheck: (index: number) => void;
-  allowedStatuses: AssessmentState["status"][];
+  stageActions?: ReactNode;
   historySlot?: ReactNode;
 };
 
-export default function SummaryView({ state, onOpenWorkstream, onStatus, onToggleCheck, allowedStatuses, historySlot }: Props) {
+export default function SummaryView({ state, onOpenWorkstream, stageActions, historySlot }: Props) {
   const profile = scopeProfile(state.plan);
   const modes = describeModes(state.primeTargets);
   const total = totalPlanDays(state);
@@ -35,6 +33,7 @@ export default function SummaryView({ state, onOpenWorkstream, onStatus, onToggl
     <>
       <ExportMenu state={state} />
       <button type="button" className="btn" onClick={() => window.print()}>Print report</button>
+      {stageActions}
     </>
   );
 
@@ -50,6 +49,7 @@ export default function SummaryView({ state, onOpenWorkstream, onStatus, onToggl
               Existing mobile PvP → Gamesroomz Prime.
               {modes.length > 0 ? ` First-release modes: ${modes.join(", ")}.` : " First-release modes not recorded yet."}
             </p>
+            <p>Status: {statusLabel(state.status)} · Developer confirmations: {confirmed} of {CONFIRMATIONS.length}</p>
           </div>
           <div className="verdict">
             <span>Scope profile</span>
@@ -82,8 +82,6 @@ export default function SummaryView({ state, onOpenWorkstream, onStatus, onToggl
             {enhancement === 0 && (
               <span className="hint">All planned work is currently marked as required for Prime. Mark optional work as Enhancement in the plan to show it separately.</span>
             )}
-            <h2 className="subhead">Agreement status</h2>
-            <AgreementTimeline status={state.status} onChange={onStatus} allowed={allowedStatuses} />
           </section>
         </div>
 
@@ -103,18 +101,6 @@ export default function SummaryView({ state, onOpenWorkstream, onStatus, onToggl
           </div>
         </section>
 
-        <section className="card">
-          <h2>Confirmation</h2>
-          <div className="checks">
-            {CONFIRMATIONS.map((text, i) => (
-              <label key={text} htmlFor={`chk-${i}`}>
-                <input type="checkbox" id={`chk-${i}`} checked={state.checks[i]} onChange={() => onToggleCheck(i)} />
-                {text}
-              </label>
-            ))}
-          </div>
-          <span className="hint">{confirmed} of {CONFIRMATIONS.length} confirmed · saved with the draft</span>
-        </section>
         {historySlot}
       </div>
     </>

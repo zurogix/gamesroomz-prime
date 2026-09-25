@@ -2,11 +2,13 @@ import { useEffect } from "react";
 import { planFieldsDone, PLAN_FIELD_COUNT } from "@/lib/assessment";
 import { DISCOVERY_SECTIONS } from "@/lib/discovery";
 import { discoveryCoverage } from "@/lib/discoveryAnswers";
-import { OVERVIEW, PLAN, SUMMARY } from "@/lib/sections";
+import { OVERVIEW } from "@/lib/sections";
+import { isPreview, Stage, stageById, stageVisible } from "@/lib/stages";
 import { AssessmentState } from "@/lib/types";
 import { ThemeChoice } from "@/hooks/useTheme";
 import ProgressRing from "./ProgressRing";
 import SidebarSectionItem from "./SidebarSectionItem";
+import LockIcon from "./stages/LockIcon";
 import UserBadge, { CurrentUser } from "./UserBadge";
 
 type Props = {
@@ -27,13 +29,30 @@ export default function Sidebar({ state, active, theme, user, onNavigate, onOpen
   }, [active]);
 
   const plansDone = state.plan.filter((w) => planFieldsDone(w) === PLAN_FIELD_COUNT).length;
-  const checksDone = state.checks.filter(Boolean).length;
   const navItem = (view: string, ring?: [number, number]) => (
     <button type="button" className={`nav-item ${active === view ? "on" : ""}`} aria-current={active === view ? "page" : undefined} onClick={() => onNavigate(view)}>
       {ring && <ProgressRing done={ring[0]} total={ring[1]} />}
       <span className="grow">{view}</span>
     </button>
   );
+  const open = (stage: Stage) => stageVisible(user.role, stage, state.status);
+  const groupLabel = (stage: Stage, extra = "") => (
+    <div className="nav-group label">
+      {stage.number} · {stage.title}{extra}
+      {!open(stage) && <LockIcon />}
+      {isPreview(user.role, stage, state.status) && <span className="preview-tag">Preview</span>}
+    </div>
+  );
+  const stageItem = (stage: Stage, ring?: [number, number]) => {
+    if (open(stage)) return navItem(stage.view, ring);
+    return (
+      <button type="button" className="nav-item locked" disabled title={stage.lockedMessage}>
+        <LockIcon />
+        <span className="grow">{stage.view}</span>
+      </button>
+    );
+  };
+  const discovery = stageById("discovery");
 
   return (
     <aside className="side">
@@ -51,13 +70,16 @@ export default function Sidebar({ state, active, theme, user, onNavigate, onOpen
       </button>
       <nav className="nav" aria-label="Sections">
         {navItem(OVERVIEW)}
-        <div className="nav-group label">Discovery · {discoveryCoverage(state.answers)}%</div>
+        {groupLabel(discovery, ` · ${discoveryCoverage(state.answers)}%`)}
         {DISCOVERY_SECTIONS.map((s) => (
           <SidebarSectionItem key={s.id} state={state} section={s} active={active === s.title} onNavigate={onNavigate} />
         ))}
-        <div className="nav-group label">Plan & report</div>
-        {navItem(PLAN, [plansDone, state.plan.length])}
-        {navItem(SUMMARY, [checksDone, state.checks.length])}
+        {groupLabel(stageById("findings"))}
+        {stageItem(stageById("findings"))}
+        {groupLabel(stageById("plan"))}
+        {stageItem(stageById("plan"), [plansDone, state.plan.length])}
+        {groupLabel(stageById("summary"))}
+        {stageItem(stageById("summary"))}
       </nav>
       <div className="side-foot">
         <span className="label">Theme</span>

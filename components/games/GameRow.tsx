@@ -2,12 +2,11 @@
 
 import { useState } from "react";
 import { apiRequest } from "@/lib/apiClient";
-import { STATUS_STEPS } from "@/lib/sections";
+import { currentStage, statusLabel } from "@/lib/stages";
 import type { GameSummary } from "@/lib/server/games";
 
 type Props = { game: GameSummary; canManage: boolean; onChanged: () => void };
 
-const statusLabel = (status: string) => STATUS_STEPS.find((s) => s.value === status)?.label ?? status;
 const formatDate = (iso: string) => new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 
 export default function GameRow({ game, canManage, onChanged }: Props) {
@@ -37,7 +36,10 @@ export default function GameRow({ game, canManage, onChanged }: Props) {
         )}
         {error && <small className="form-error" role="alert">{error}</small>}
       </td>
-      <td>{statusLabel(game.status)}</td>
+      <td>
+        <b className="stage-cell">Stage {currentStage(game.status).number} · {currentStage(game.status).title}</b>
+        <small className="hint">{statusLabel(game.status)}</small>
+      </td>
       <td className="num">{formatDate(game.updatedAt)}</td>
       <td>{game.updatedBy || "—"}</td>
       {canManage && (

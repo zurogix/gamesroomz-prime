@@ -5,11 +5,10 @@ import { apiRequest } from "@/lib/apiClient";
 import { downloadText, exportBaseName } from "@/lib/download";
 import { buildDiscoveryMarkdown } from "@/lib/exportMarkdown";
 import type { SnapshotEntry } from "@/lib/server/snapshots";
-import { STATUS_STEPS } from "@/lib/sections";
+import { statusLabel } from "@/lib/stages";
 
 type Props = { gameId: string; refreshKey: string };
 
-const statusLabel = (status: string) => STATUS_STEPS.find((s) => s.value === status)?.label ?? status;
 const formatDate = (iso: string) => new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 
 /** Saved versions (one per status change), each exportable as Markdown. */

@@ -1,16 +1,49 @@
-import type { AssessmentState, AssessmentStatus } from "./types";
+import { ENGINE_WORKSTREAM_ID } from "./engine";
+import { statusLabel } from "./stages";
+import type { AssessmentState, AssessmentStatus, Workstream } from "./types";
 
 export type Role = "product" | "developer";
 
-const DEVELOPER_STATUSES: AssessmentStatus[] = ["draft", "assessment-complete", "planning", "submitted"];
-const ALL_STATUSES: AssessmentStatus[] = [...DEVELOPER_STATUSES, "changes-requested", "agreed"];
+/** The parts of an assessment that are edited separately. */
+export type Area = "primeTargets" | "developerTeam" | "answers" | "engine" | "plan" | "checks";
+
+export const ALL_AREAS: Area[] = ["primeTargets", "developerTeam", "answers", "engine", "plan", "checks"];
 
 export const isProduct = (role: Role) => role === "product";
 
-/** Statuses a role may set. Product may set every status. */
-export function allowedStatuses(role: Role): AssessmentStatus[] {
-  return isProduct(role) ? ALL_STATUSES : DEVELOPER_STATUSES;
+const DEVELOPER_TRANSITIONS: Partial<Record<AssessmentStatus, AssessmentStatus[]>> = {
+  discovery: ["discovery-submitted"],
+  plan: ["plan-submitted"],
+};
+
+const PRODUCT_TRANSITIONS: Partial<Record<AssessmentStatus, AssessmentStatus[]>> = {
+  "discovery-submitted": ["findings", "discovery"],
+  findings: ["plan"],
+  "plan-submitted": ["agreed", "plan"],
+  agreed: ["plan"],
+};
+
+/** The statuses this role may move the assessment to from its current status. */
+export function allowedTransitions(role: Role, from: AssessmentStatus): AssessmentStatus[] {
+  const table = isProduct(role) ? PRODUCT_TRANSITIONS : DEVELOPER_TRANSITIONS;
+  return table[from] ?? [];
 }
+
+const DEVELOPER_AREAS: Record<AssessmentStatus, Area[]> = {
+  discovery: ["answers", "developerTeam"],
+  "discovery-submitted": [],
+  findings: ["engine"],
+  plan: ["engine", "plan", "checks"],
+  "plan-submitted": [],
+  agreed: [],
+};
+
+/** What this role may change while the assessment is in this status. Product may change everything. */
+export function editableAreas(role: Role, status: AssessmentStatus): Area[] {
+  return isProduct(role) ? ALL_AREAS : DEVELOPER_AREAS[status];
+}
+
+export const canEdit = (role: Role, status: AssessmentStatus, area: Area) => editableAreas(role, status).includes(area);
 
 export function canEditPrimeTargets(role: Role) {
   return isProduct(role);
@@ -35,16 +68,52 @@ function stableStringify(value: unknown): string {
   return JSON.stringify(value);
 }
 
+/** Engine 2.0 days and risk follow the engine comparison, so they are not plan edits. */
+function planWithoutDerived(plan: Workstream[]) {
+  return plan.map((w) => (w.id === ENGINE_WORKSTREAM_ID ? { ...w, personDays: 0, risk: "" } : w));
+}
+
+const AREA_VALUE: Record<Area, (s: AssessmentState) => unknown> = {
+  primeTargets: (s) => s.primeTargets,
+  developerTeam: (s) => s.gameInfo.developer,
+  answers: (s) => s.answers,
+  engine: (s) => s.engineAssessment,
+  plan: (s) => planWithoutDerived(s.plan),
+  checks: (s) => s.checks,
+};
+
+/** The areas that differ between two states. The game name is owned by the Game record and ignored. */
+export function changedAreas(previous: AssessmentState, next: AssessmentState): Area[] {
+  return ALL_AREAS.filter((area) => stableStringify(AREA_VALUE[area](previous)) !== stableStringify(AREA_VALUE[area](next)));
+}
+
+const LOCKED_MESSAGE: Record<Area, string> = {
+  primeTargets: "Only the product team can change the Prime targets.",
+  developerTeam: "The developer / team can only be changed while discovery is in progress.",
+  answers: "Discovery answers can only be changed while discovery is in progress.",
+  engine: "The engine comparison can only be changed while findings or the plan are open.",
+  plan: "The conversion plan can only be changed while the plan is in progress.",
+  checks: "The confirmations can only be changed while the plan is in progress.",
+};
+
+export const SUBMIT_PLAN_NEEDS_CHECKS = "Tick every confirmation before submitting the plan.";
+
+function transitionError(role: Role, from: AssessmentStatus, next: AssessmentState): string | null {
+  if (from === next.status) return null;
+  if (!allowedTransitions(role, from).includes(next.status)) {
+    return `You can't move this assessment from "${statusLabel(from)}" to "${statusLabel(next.status)}".`;
+  }
+  if (next.status === "plan-submitted" && !next.checks.every(Boolean)) return SUBMIT_PLAN_NEEDS_CHECKS;
+  return null;
+}
+
 /**
- * Returns why a save is not allowed for this role, or null when it is.
- * Only changes are checked: a developer may keep saving an assessment that product marked "agreed".
+ * Returns why a save is not allowed for this role, or null when it is. Edits are checked against the
+ * stored status, so a developer can make a last change and submit in the same save.
  */
 export function assessmentChangeError(role: Role, previous: AssessmentState, next: AssessmentState): string | null {
-  const targetsChanged = stableStringify(previous.primeTargets) !== stableStringify(next.primeTargets);
-  if (targetsChanged && !canEditPrimeTargets(role)) return "Only the product team can change the Prime targets.";
-  const statusChanged = previous.status !== next.status;
-  if (statusChanged && !allowedStatuses(role).includes(next.status)) {
-    return `Only the product team can set the status to "${next.status}".`;
-  }
-  return null;
+  const allowed = editableAreas(role, previous.status);
+  const locked = changedAreas(previous, next).find((area) => !allowed.includes(area));
+  if (locked) return LOCKED_MESSAGE[locked];
+  return transitionError(role, previous.status, next);
 }
