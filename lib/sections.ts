@@ -5,6 +5,8 @@ export type ImpactClass = Exclude<Classification, "">;
 
 export const OVERVIEW = "Overview";
 export const FINDINGS = "Findings & Options";
+/** Product only: every developer's answers side by side. Part of the discovery stage. */
+export const COMPARE = "Compare answers";
 export const PLAN = "Conversion Plan";
 export const SUMMARY = "Management Summary";
 

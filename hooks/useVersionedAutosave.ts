@@ -3,11 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ApiResult } from "@/lib/apiClient";
 import { SaveState, SaveStatus } from "@/components/SaveStatusContext";
+import { BACKUP_PREFIX } from "@/lib/browserData";
 
 const SAVE_DELAY_MS = 1000;
 
-/** Every local backup key starts with this, so signing out can clear them all. */
-export const BACKUP_PREFIX = "gamesroomz-prime-backup-";
+export { BACKUP_PREFIX };
 
 export type SendVersioned<T> = (data: T, version: number) => Promise<ApiResult<{ version: number }>>;
 

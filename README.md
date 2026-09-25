@@ -79,7 +79,11 @@ version that can be exported as Markdown from the Management Summary. Deletes ar
 Discovery answers are not part of the assessment: each developer has their own **discovery response** per game
 (`DiscoveryResponse`, one active row per game and developer), saved with its own version and submitted on its own.
 Developers only ever see their own answers; the product team can read everyone's but never edit them, and can reopen
-a submitted response or remove one (soft delete — the developer then starts with a blank form).
+a submitted response or remove one (soft delete — the developer then starts with a blank form). In the portal the product
+team picks whose answers to view at the top of each discovery section, sees everyone side by side in **Compare
+answers** (questions where the chosen options differ are marked "Answers differ"), and manages responses from the
+Overview. Their Markdown export lists every developer's answer under each question; a developer's export has their
+own answers only. Signing out clears this browser's autosave backups and old local drafts (the theme is kept).
 
 Roles: **product** can change the shared assessment at any stage. **Developers** can edit
 their own discovery answers (until they submit, and only while the game is in discovery), the developer / team only

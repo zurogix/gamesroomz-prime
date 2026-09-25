@@ -91,3 +91,17 @@ export function discoveryKpi(role: Role, own: DiscoveryResponseData | null, resp
   const submitted = responses.filter((r) => r.status === "submitted").length;
   return { value: `${submitted} of ${responses.length}`, detail: "developers submitted discovery" };
 }
+
+function joinNames(names: string[]) {
+  if (names.length <= 1) return names.join("");
+  return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+}
+
+/** What the "Publish findings" dialog says about the responses: a blocker, a warning, or nothing. */
+export function publishFindingsNote(responses: Pick<DiscoveryResponseData, "developerName" | "status">[]) {
+  const submitted = responses.filter((r) => r.status === "submitted").length;
+  if (submitted === 0) return { blocked: true, text: PUBLISH_NEEDS_SUBMISSION };
+  const waiting = responses.filter((r) => r.status !== "submitted").map((r) => r.developerName);
+  if (waiting.length === 0) return null;
+  return { blocked: false, text: `${joinNames(waiting)} ${waiting.length === 1 ? "hasn't" : "haven't"} submitted. Publish findings anyway?` };
+}

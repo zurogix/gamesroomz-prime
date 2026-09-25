@@ -11,10 +11,11 @@ type Props = {
   role: Role;
   onStatus: (status: AssessmentStatus) => void;
   onToggleCheck: (index: number) => void;
+  publishNote?: { blocked: boolean; text: string } | null;
 };
 
 /** The game status changes this role can make now, each behind a confirmation dialog. */
-export default function StageActions({ state, role, onStatus, onToggleCheck }: Props) {
+export default function StageActions({ state, role, onStatus, onToggleCheck, publishNote }: Props) {
   const [pending, setPending] = useState<StageAction | null>(null);
   const actions = stageActionsFor(role, state.status);
   if (actions.length === 0) return null;
@@ -31,7 +32,7 @@ export default function StageActions({ state, role, onStatus, onToggleCheck }: P
         <button key={a.to} type="button" className={`btn ${a.primary ? "primary" : ""}`} onClick={() => setPending(a)}>{a.label}</button>
       ))}
       {pending && (
-        <StageActionDialog state={state} action={pending} onToggleCheck={onToggleCheck} onConfirm={confirm} onCancel={() => setPending(null)} />
+        <StageActionDialog state={state} action={pending} onToggleCheck={onToggleCheck} onConfirm={confirm} onCancel={() => setPending(null)} publishNote={publishNote} />
       )}
     </>
   );

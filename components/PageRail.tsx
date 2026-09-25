@@ -2,6 +2,7 @@ import { planCoverage } from "@/lib/assessment";
 import { DISCOVERY_SECTIONS } from "@/lib/discovery";
 import { AnswerMap, discoveryCoverage, sectionProgress } from "@/lib/discoveryAnswers";
 import { railKindFor } from "@/lib/rail";
+import type { DiscoveryStatus } from "@/lib/responses";
 import { AssessmentState } from "@/lib/types";
 import RailFollowUp from "./RailFollowUp";
 import RailPlanSummary from "./RailPlanSummary";
@@ -13,18 +14,20 @@ type Props = {
   view: string;
   state: AssessmentState;
   answers: AnswerMap;
+  ownDiscovery?: DiscoveryStatus;
+  productNote?: string;
   onJumpToQuestion: (id: string) => void;
   onOpenWorkstream: (id: string) => void;
 };
 
 /** The right-hand rail changes with the page and always starts with the Progress box; some pages have no rail. */
-export default function PageRail({ view, state, answers, onJumpToQuestion, onOpenWorkstream }: Props) {
+export default function PageRail({ view, state, answers, ownDiscovery, productNote, onJumpToQuestion, onOpenWorkstream }: Props) {
   const kind = railKindFor(view);
   if (kind === "none") return null;
 
   const discovery = { label: "Discovery overall", percent: discoveryCoverage(answers) };
   const followUp = <RailFollowUp answers={answers} onJumpToQuestion={onJumpToQuestion} />;
-  const stageProgress = <RailStageProgress state={state} answers={answers} />;
+  const stageProgress = <RailStageProgress state={state} answers={answers} ownDiscovery={ownDiscovery} productNote={productNote} />;
 
   if (kind === "plan") {
     return (

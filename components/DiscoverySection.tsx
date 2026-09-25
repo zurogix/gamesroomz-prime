@@ -5,6 +5,7 @@ import { DISCOVERY_INTRO, DISCOVERY_QUESTIONS, DISCOVERY_SECTIONS } from "@/lib/
 import { AnswerMap, answerFor, isAnswered, sectionProgress } from "@/lib/discoveryAnswers";
 import { QuestionAnswer } from "@/lib/discoveryTypes";
 import { focusQuestion } from "@/lib/rail";
+import { ExportResponse } from "@/lib/exportMarkdown";
 import { PRODUCT_SUBMIT_NOTE, sectionNav } from "@/lib/sectionNav";
 import { AssessmentState } from "@/lib/types";
 import DiscoveryQuestionCard from "./DiscoveryQuestionCard";
@@ -30,9 +31,12 @@ type Props = {
   stageActions?: ReactNode;
   /** The developer's own "Submit discovery" button, when they can submit. */
   submitAction?: ReactNode;
+  /** Product: the "Viewing: [developer]" picker. */
+  viewerSlot?: ReactNode;
+  exportResponses: ExportResponse[];
 };
 
-export default function DiscoverySection({ state, answers, sectionTitle, focusId, onAnswer, onNavigate, canEditAnswers, showWhatHappensNext, markUnanswered, showProductNote, stageActions, submitAction }: Props) {
+export default function DiscoverySection({ state, answers, sectionTitle, focusId, onAnswer, onNavigate, canEditAnswers, showWhatHappensNext, markUnanswered, showProductNote, stageActions, submitAction, viewerSlot, exportResponses }: Props) {
   const index = DISCOVERY_SECTIONS.findIndex((s) => s.title === sectionTitle);
   const section = DISCOVERY_SECTIONS[index];
   const questions = DISCOVERY_QUESTIONS.filter((q) => q.section === section.id);
@@ -48,8 +52,9 @@ export default function DiscoverySection({ state, answers, sectionTitle, focusId
 
   return (
     <>
-      <PageHeader title={`${section.id} · ${section.title}`} crumb={crumb} actions={<><ExportMenu state={state} answers={answers} />{submitAction}{stageActions}</>} />
+      <PageHeader title={`${section.id} · ${section.title}`} crumb={crumb} actions={<><ExportMenu state={state} responses={exportResponses} />{submitAction}{stageActions}</>} />
       <div className="content">
+        {viewerSlot}
         {showWhatHappensNext && <WhatHappensNext />}
         {index === 0 && <p className="discovery-intro">{DISCOVERY_INTRO}</p>}
         <SectionTipsBox section={section} />

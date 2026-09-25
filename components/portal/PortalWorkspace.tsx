@@ -10,6 +10,9 @@ import PlanView from "@/components/PlanView";
 import Sidebar from "@/components/Sidebar";
 import PageRail from "@/components/PageRail";
 import SummaryView from "@/components/SummaryView";
+import CompareView from "@/components/discovery/CompareView";
+import DeveloperPicker from "@/components/discovery/DeveloperPicker";
+import ResponsesPanel from "@/components/discovery/ResponsesPanel";
 import ProgressLine from "@/components/stages/ProgressLine";
 import StageActions from "@/components/stages/StageActions";
 import SubmitDiscoveryButton from "@/components/stages/SubmitDiscoveryButton";
@@ -22,9 +25,9 @@ import { apiRequest } from "@/lib/apiClient";
 import { unansweredQuestions } from "@/lib/discoveryAnswers";
 import { railKindFor } from "@/lib/rail";
 import { canEdit, isProduct } from "@/lib/permissions";
-import { discoveryKpi } from "@/lib/responses";
+import { discoveryKpi, publishFindingsNote } from "@/lib/responses";
 import { combineSaveStatus } from "@/lib/saveStatus";
-import { ASSESSMENT_SECTIONS, FINDINGS, OVERVIEW, PLAN, SUMMARY } from "@/lib/sections";
+import { ASSESSMENT_SECTIONS, COMPARE, FINDINGS, OVERVIEW, PLAN, SUMMARY } from "@/lib/sections";
 import { currentStage, navigableStages, Stage, stageById, viewOpen } from "@/lib/stages";
 import { AssessmentState } from "@/lib/types";
 import { SaveStatusContext } from "@/components/SaveStatusContext";
@@ -60,17 +63,20 @@ export default function PortalWorkspace({ gameId, initialState, initialVersion, 
   const [submitAttempted, setSubmitAttempted] = useState(false);
 
   const stages = navigableStages(status);
-  const isOpen = useCallback((v: string) => viewOpen(v, status), [status]);
+  // "Compare answers" is for the product team only.
+  const isOpen = useCallback((v: string) => viewOpen(v, status) && (v !== COMPARE || isProduct(role)), [status, role]);
   const nav = useWorkspaceNavigation(isOpen);
   const { shownView, viewStage } = nav;
-  const openViews = [OVERVIEW, ...ASSESSMENT_SECTIONS, FINDINGS, PLAN, SUMMARY].filter(isOpen);
+  const openViews = [OVERVIEW, ...ASSESSMENT_SECTIONS, COMPARE, FINDINGS, PLAN, SUMMARY].filter(isOpen);
   const showRail = railKindFor(shownView) !== "none";
   const answers = discovery.shownAnswers;
   const ownStatus = discovery.own?.status;
 
   /** Game status actions appear in the header of the stage the assessment is currently in. */
   const actionsFor = (stage: Stage) =>
-    currentStage(status).id === stage.id ? <StageActions state={state} role={role} onStatus={setStatus} onToggleCheck={toggleCheck} /> : null;
+    currentStage(status).id === stage.id ? (
+      <StageActions state={state} role={role} onStatus={setStatus} onToggleCheck={toggleCheck} publishNote={publishFindingsNote(discovery.responses)} />
+    ) : null;
 
   const submitAction = discovery.canEditOwn ? (
     <SubmitDiscoveryButton
@@ -81,7 +87,10 @@ export default function PortalWorkspace({ gameId, initialState, initialVersion, 
     />
   ) : null;
 
+  const productOnly = <T,>(node: T) => (isProduct(role) ? node : undefined);
+
   function renderView() {
+    if (shownView === COMPARE) return <CompareView responses={discovery.responses} />;
     if (ASSESSMENT_SECTIONS.includes(shownView)) {
       return (
         <DiscoverySection
@@ -97,6 +106,8 @@ export default function PortalWorkspace({ gameId, initialState, initialVersion, 
           showProductNote={isProduct(role) && status === "discovery"}
           stageActions={actionsFor(stageById("discovery"))}
           submitAction={submitAction}
+          exportResponses={discovery.exportResponses}
+          viewerSlot={productOnly(<DeveloperPicker responses={discovery.responses} viewingId={discovery.viewing?.id ?? null} onChange={discovery.setViewingId} />)}
         />
       );
     }
@@ -130,7 +141,7 @@ export default function PortalWorkspace({ gameId, initialState, initialVersion, 
           state={state}
           onOpenWorkstream={nav.openWorkstream}
           discoveryKpi={discoveryKpi(role, discovery.own, discovery.responses)}
-          exportAnswers={answers}
+          exportResponses={discovery.exportResponses}
           stageActions={actionsFor(stageById("summary"))}
           historySlot={<VersionHistory gameId={gameId} refreshKey={`${status}:${saveStatus.savedAt ?? 0}`} />}
         />
@@ -147,6 +158,9 @@ export default function PortalWorkspace({ gameId, initialState, initialVersion, 
         onOpenStage={nav.openStage}
         canEditTeam={canEdit(role, status, "developerTeam")}
         canEditAnswers={discovery.canEditOwn}
+        responsesSlot={productOnly(
+          <ResponsesPanel gameId={gameId} gameStatus={status} responses={discovery.responses} onChanged={discovery.refreshResponses} />,
+        )}
       />
     );
   }
@@ -164,13 +178,14 @@ export default function PortalWorkspace({ gameId, initialState, initialVersion, 
           onTheme={setTheme}
           user={user}
           stages={stages}
+          showCompare={isOpen(COMPARE)}
         />
         <main className="main">
           {saveStatus.state === "conflict" && <ConflictBanner onReload={onReload} />}
           <ProgressLine stages={stages} status={status} activeStage={viewStage} onOpen={nav.openStage} />
           {renderView()}
         </main>
-        {showRail && <PageRail view={shownView} state={state} answers={answers} onJumpToQuestion={nav.jumpToQuestion} onOpenWorkstream={nav.openWorkstream} />}
+        {showRail && <PageRail view={shownView} state={state} answers={answers} ownDiscovery={ownStatus} productNote={discovery.productNote} onJumpToQuestion={nav.jumpToQuestion} onOpenWorkstream={nav.openWorkstream} />}
       </div>
       {nav.drawerId && nav.planOpen && (
         <PlanDrawer

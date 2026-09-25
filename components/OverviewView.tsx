@@ -1,3 +1,4 @@
+import { ReactNode } from "react";
 import { DISCOVERY_QUESTIONS, DISCOVERY_SECTIONS } from "@/lib/discovery";
 import { AnswerMap, answerFor, isAnswered, sectionProgress } from "@/lib/discoveryAnswers";
 import { Role } from "@/lib/permissions";
@@ -20,9 +21,11 @@ type Props = {
   onOpenStage: (stage: Stage) => void;
   canEditTeam: boolean;
   canEditAnswers: boolean;
+  /** Product: the discovery responses panel. */
+  responsesSlot?: ReactNode;
 };
 
-export default function OverviewView({ state, answers, ownDiscovery, role, onGameInfo, onNavigate, onOpenStage, canEditTeam, canEditAnswers }: Props) {
+export default function OverviewView({ state, answers, ownDiscovery, role, onGameInfo, onNavigate, onOpenStage, canEditTeam, canEditAnswers, responsesSlot }: Props) {
   const next = DISCOVERY_SECTIONS.find((s) => {
     const { done, total } = sectionProgress(answers, s.id);
     return done < total;
@@ -38,6 +41,7 @@ export default function OverviewView({ state, answers, ownDiscovery, role, onGam
       <div className="content">
         <GameInfoLine gameInfo={state.gameInfo} onDeveloper={(developer) => onGameInfo("developer", developer)} canEdit={canEditTeam} />
         <NextStepCard role={role} status={state.status} ownDiscovery={ownDiscovery} onOpen={onOpenStage} />
+        {responsesSlot}
         {showResume && next && nextProgress && (
           <div className="card resume-inline">
             <div>

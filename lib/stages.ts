@@ -1,5 +1,6 @@
 import { DISCOVERY_SECTIONS } from "./discovery";
-import { FINDINGS, OVERVIEW, PLAN, SUMMARY } from "./sections";
+import { COMPARE, FINDINGS, OVERVIEW, PLAN, SUMMARY } from "./sections";
+import type { DiscoveryStatus } from "./responses";
 import type { AssessmentStatus } from "./types";
 
 /** In workflow order. The first one is the default for new and older assessments. */
@@ -57,7 +58,7 @@ export const currentStage = (status: AssessmentStatus) => stageById(CURRENT_STAG
 /** Which stage a view belongs to; the Overview belongs to none. */
 export function stageForView(view: string): Stage | null {
   if (view === OVERVIEW) return null;
-  if (DISCOVERY_SECTIONS.some((s) => s.title === view)) return stageById("discovery");
+  if (view === COMPARE || DISCOVERY_SECTIONS.some((s) => s.title === view)) return stageById("discovery");
   return STAGES.find((s) => s.view === view) ?? null;
 }
 
@@ -79,10 +80,19 @@ export function viewOpen(view: string, status: AssessmentStatus) {
   return stage === null || stageOpen(stage, status);
 }
 
-/** The rail's progress line, e.g. "Step 1: Discovery — Discovery submitted, under review". */
-export function stageSummary(status: AssessmentStatus) {
+const OWN_DISCOVERY_TEXT: Record<DiscoveryStatus, string> = {
+  "in-progress": "Your discovery: in progress",
+  submitted: "Your discovery: submitted, under review",
+};
+
+/**
+ * The rail's progress line, e.g. "Step 2: Findings & options — Findings & options, open for comments".
+ * During discovery a developer sees their own response instead: "Step 1: Discovery — Your discovery: in progress".
+ */
+export function stageSummary(status: AssessmentStatus, ownDiscovery?: DiscoveryStatus) {
   const stage = currentStage(status);
-  return `Step ${stage.number}: ${stage.title} — ${statusLabel(status).replace(" — ", ", ")}`;
+  const detail = stage.id === "discovery" && ownDiscovery ? OWN_DISCOVERY_TEXT[ownDiscovery] : statusLabel(status).replace(" — ", ", ");
+  return `Step ${stage.number}: ${stage.title} — ${detail}`;
 }
 
 export type StageProgress = "done" | "current" | "upcoming";

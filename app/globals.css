@@ -423,6 +423,17 @@ a.btn{text-decoration:none}
 .rail-stage .label{color:var(--tint-ink)}
 .rail-stage p{margin:4px 0 0;font-weight:700}
 .rail-stage .rail-progress-item{margin-top:10px}
+.rail-stage-note{display:block;margin-top:6px}
+.viewing-bar{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.viewing-bar label{font-weight:700}
+.viewing-bar select{width:auto;min-width:220px;max-width:100%}
+.compare-section{display:flex;flex-direction:column;gap:12px}
+.compare-section h2{font-size:16px}
+.compare-q.differs{border-color:var(--warn)}
+.compare-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.compare-cell{padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);overflow-wrap:anywhere}
+.compare-cell p{margin:4px 0 0}
+.compare-detail{display:block;margin-top:4px;color:var(--muted)}
 .progress-status{font-size:13px;color:var(--muted)}
 .next-note{padding:12px 16px;border-radius:12px;background:var(--tint);color:var(--tint-ink)}
 .next-note p{margin:4px 0 0;font-size:14px}

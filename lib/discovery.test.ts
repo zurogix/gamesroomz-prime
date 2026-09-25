@@ -75,7 +75,7 @@ describe("Markdown export", () => {
     A2: answer({ choice: { selected: [OTHER_ID], other: "Nakama" } }),
     C2: answer({ choice: { selected: [NOT_SURE_ID], other: "" } }),
   };
-  const md = buildDiscoveryMarkdown(initialAssessment(), answers, new Date("2026-09-25T00:00:00Z"));
+  const md = buildDiscoveryMarkdown(initialAssessment(), [{ name: "Alex", status: "submitted", answers }], new Date("2026-09-25T00:00:00Z"));
 
   it("includes every question id", () => {
     DISCOVERY_QUESTIONS.forEach((q) => expect(md).toContain(`### ${q.id} · `));

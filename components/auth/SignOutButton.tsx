@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { clearPortalData } from "@/lib/browserData";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export default function SignOutButton({ className = "btn quiet" }: { className?: string }) {
@@ -8,6 +9,11 @@ export default function SignOutButton({ className = "btn quiet" }: { className?:
 
   async function signOut() {
     setBusy(true);
+    try {
+      clearPortalData(localStorage);
+    } catch {
+      // Storage unavailable: nothing was kept in this browser.
+    }
     try {
       await createSupabaseBrowserClient().auth.signOut();
     } finally {

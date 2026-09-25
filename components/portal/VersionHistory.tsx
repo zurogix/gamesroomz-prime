@@ -3,11 +3,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { apiRequest } from "@/lib/apiClient";
 import { downloadText, exportBaseName } from "@/lib/download";
-import { buildDiscoveryMarkdown } from "@/lib/exportMarkdown";
+import { buildDiscoveryMarkdown, ExportResponse } from "@/lib/exportMarkdown";
 import type { SnapshotEntry } from "@/lib/server/snapshots";
 import { statusLabel } from "@/lib/stages";
 
 type Props = { gameId: string; refreshKey: string };
+
+/** Versions saved before answers were kept per developer still hold one set of answers. */
+const legacyResponses = (entry: SnapshotEntry): ExportResponse[] =>
+  Object.keys(entry.answers).length ? [{ name: "Answers saved with this version", status: "submitted", answers: entry.answers }] : [];
 
 const formatDate = (iso: string) => new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 
@@ -29,7 +33,7 @@ export default function VersionHistory({ gameId, refreshKey }: Props) {
 
   function exportEntry(entry: SnapshotEntry) {
     const name = `${exportBaseName(entry.state.gameInfo.gameName)}-${entry.status}-${entry.createdAt.slice(0, 10)}.md`;
-    if (!downloadText(name, buildDiscoveryMarkdown(entry.state, entry.answers, new Date(entry.createdAt)), "text/markdown")) setError("Download failed.");
+    if (!downloadText(name, buildDiscoveryMarkdown(entry.state, legacyResponses(entry), new Date(entry.createdAt)), "text/markdown")) setError("Download failed.");
   }
 
   return (

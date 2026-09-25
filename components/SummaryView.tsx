@@ -1,6 +1,6 @@
 import { CSSProperties, ReactNode } from "react";
 import { deriveFindings, planCoverage, totalPlanDays } from "@/lib/assessment";
-import { AnswerMap } from "@/lib/discoveryAnswers";
+import { ExportResponse } from "@/lib/exportMarkdown";
 import { scopeProfile } from "@/lib/scopeProfile";
 import { CLASSES, CLASS_LABEL, CONFIRMATIONS, formatDays } from "@/lib/sections";
 import { statusLabel } from "@/lib/stages";
@@ -18,12 +18,12 @@ type Props = {
   /** e.g. "2 of 3" developers submitted, or the developer's own discovery status. */
   discoveryKpi: { value: string; detail: string };
   /** Answers included in "Export answers". */
-  exportAnswers: AnswerMap;
+  exportResponses: ExportResponse[];
   stageActions?: ReactNode;
   historySlot?: ReactNode;
 };
 
-export default function SummaryView({ state, onOpenWorkstream, discoveryKpi, exportAnswers, stageActions, historySlot }: Props) {
+export default function SummaryView({ state, onOpenWorkstream, discoveryKpi, exportResponses, stageActions, historySlot }: Props) {
   const profile = scopeProfile(state.plan);
   const total = totalPlanDays(state);
   const mandatory = state.plan.filter((w) => w.scopeType === "mandatory").reduce((sum, w) => sum + (Number(w.personDays) || 0), 0);
@@ -33,7 +33,7 @@ export default function SummaryView({ state, onOpenWorkstream, discoveryKpi, exp
   const confirmed = state.checks.filter(Boolean).length;
   const actions = (
     <>
-      <ExportMenu state={state} answers={exportAnswers} />
+      <ExportMenu state={state} responses={exportResponses} />
       <button type="button" className="btn" onClick={() => window.print()}>Print report</button>
       {stageActions}
     </>
