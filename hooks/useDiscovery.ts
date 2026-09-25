@@ -6,7 +6,7 @@ import { DISCOVERY_QUESTIONS } from "@/lib/discovery";
 import { answerFor, normalizeAnswer, type AnswerMap } from "@/lib/discoveryAnswers";
 import { QuestionAnswer } from "@/lib/discoveryTypes";
 import type { Role } from "@/lib/permissions";
-import type { ExportResponse } from "@/lib/exportMarkdown";
+import { type ExportResponse, toExportResponse } from "@/lib/exportMarkdown";
 import type { DiscoveryResponseData } from "@/lib/responses";
 import type { AssessmentStatus } from "@/lib/types";
 import { BACKUP_PREFIX, useVersionedAutosave } from "./useVersionedAutosave";
@@ -64,8 +64,8 @@ export function useDiscovery(gameId: string, role: Role, gameStatus: AssessmentS
 
   const viewing = responses.find((r) => r.id === viewingId) ?? null;
   const exportResponses: ExportResponse[] = role === "developer"
-    ? (own ? [{ name: own.developerName, status: own.status, answers }] : [])
-    : responses.map((r) => ({ name: r.developerName, status: r.status, answers: r.answers }));
+    ? (own ? [toExportResponse({ ...own, answers })] : [])
+    : responses.map(toExportResponse);
   const submittedCount = responses.filter((r) => r.status === "submitted").length;
 
   return {

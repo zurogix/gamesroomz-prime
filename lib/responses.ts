@@ -1,3 +1,4 @@
+import { DISCOVERY_SECTIONS } from "./discovery";
 import { canSubmitDiscovery, type AnswerMap } from "./discoveryAnswers";
 import type { Role } from "./permissions";
 import type { AssessmentStatus } from "./types";
@@ -104,4 +105,9 @@ export function publishFindingsNote(responses: Pick<DiscoveryResponseData, "deve
   const waiting = responses.filter((r) => r.status !== "submitted").map((r) => r.developerName);
   if (waiting.length === 0) return null;
   return { blocked: false, text: `${joinNames(waiting)} ${waiting.length === 1 ? "hasn't" : "haven't"} submitted. Publish findings anyway?` };
+}
+
+/** "View answers" (and the developer's name) opens section A with that developer selected, read-only. */
+export function viewAnswersTarget(responseId: string) {
+  return { viewingId: responseId, view: DISCOVERY_SECTIONS[0].title };
 }

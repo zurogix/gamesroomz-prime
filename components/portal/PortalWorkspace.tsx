@@ -26,7 +26,7 @@ import { apiRequest } from "@/lib/apiClient";
 import { unansweredQuestions } from "@/lib/discoveryAnswers";
 import { railKindFor } from "@/lib/rail";
 import { canEdit, isProduct } from "@/lib/permissions";
-import { discoveryKpi, publishFindingsNote } from "@/lib/responses";
+import { discoveryKpi, publishFindingsNote, viewAnswersTarget } from "@/lib/responses";
 import { combineSaveStatus } from "@/lib/saveStatus";
 import { ASSESSMENT_SECTIONS, COMPARE, FINDINGS, OVERVIEW, PLAN, SUBMITTED, SUMMARY } from "@/lib/sections";
 import { currentStage, navigableStages, Stage, stageById, viewOpen } from "@/lib/stages";
@@ -78,6 +78,13 @@ export default function PortalWorkspace({ gameId, initialState, initialVersion, 
     currentStage(status).id === stage.id ? (
       <StageActions state={state} role={role} onStatus={setStatus} onToggleCheck={toggleCheck} publishNote={publishFindingsNote(discovery.responses)} />
     ) : null;
+
+  /** Product: open section A with this developer's answers selected. */
+  const viewAnswers = (responseId: string) => {
+    const target = viewAnswersTarget(responseId);
+    discovery.setViewingId(target.viewingId);
+    nav.navigate(target.view);
+  };
 
   /** On success the developer sees the thank-you screen instead of the section they were on. */
   const submitAndThank = async (): Promise<string | null> => {
@@ -176,7 +183,7 @@ export default function PortalWorkspace({ gameId, initialState, initialVersion, 
         canEditTeam={canEdit(role, status, "developerTeam")}
         canEditAnswers={discovery.canEditOwn}
         responsesSlot={productOnly(
-          <ResponsesPanel gameId={gameId} gameStatus={status} responses={discovery.responses} onChanged={discovery.refreshResponses} />,
+          <ResponsesPanel gameId={gameId} state={state} responses={discovery.responses} onView={viewAnswers} onChanged={discovery.refreshResponses} />,
         )}
       />
     );

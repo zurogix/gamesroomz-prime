@@ -2,26 +2,33 @@
 
 import { useState } from "react";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import ExportDropdown from "@/components/ExportDropdown";
 import { apiRequest } from "@/lib/apiClient";
+import { ALL_DEVELOPERS, discoveryFileName } from "@/lib/download";
+import { buildDiscoveryMarkdown, toExportResponse } from "@/lib/exportMarkdown";
 import { DISCOVERY_STATUS_LABEL, DiscoveryResponseData } from "@/lib/responses";
-import { AssessmentStatus } from "@/lib/types";
+import { AssessmentState } from "@/lib/types";
 import { NO_RESPONSES_YET } from "./DeveloperPicker";
 
 type Props = {
   gameId: string;
-  gameStatus: AssessmentStatus;
+  state: AssessmentState;
   responses: DiscoveryResponseData[];
+  /** Opens section A showing this developer's answers (read-only). */
+  onView: (responseId: string) => void;
   /** Reloads the responses after a change; resolves to an error message or null. */
   onChanged: () => Promise<string | null>;
 };
 
 const formatDate = (iso: string | null) => (iso ? new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }) : "—");
 
-/** Product: each developer's discovery status, with Reopen (submitted only) and Remove. */
-export default function ResponsesPanel({ gameId, gameStatus, responses, onChanged }: Props) {
+/** Product: each developer's discovery status, with View answers, Export, Reopen (submitted only) and Remove. */
+export default function ResponsesPanel({ gameId, state, responses, onView, onChanged }: Props) {
   const [removing, setRemoving] = useState<DiscoveryResponseData | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const gameName = state.gameInfo.gameName;
+  const canReopen = state.status === "discovery";
 
   async function run(path: string, init: RequestInit) {
     setBusy(true);
@@ -41,30 +48,44 @@ export default function ResponsesPanel({ gameId, gameStatus, responses, onChange
   }
 
   return (
-    <section className="card">
-      <h2>Discovery responses</h2>
+    <section className="card responses-panel">
+      <div className="responses-head">
+        <h2>Discovery responses</h2>
+        {responses.length > 0 && (
+          <ExportDropdown
+            label="Export all"
+            buildMarkdown={() => buildDiscoveryMarkdown(state, responses.map(toExportResponse))}
+            fileName={() => discoveryFileName(gameName, ALL_DEVELOPERS)}
+          />
+        )}
+      </div>
       {responses.length === 0 && <p className="hint">{NO_RESPONSES_YET}</p>}
       {responses.length > 0 && (
-        <div className="table-wrap">
-          <table>
-            <thead><tr><th>Developer</th><th>Status</th><th>Submitted</th><th /></tr></thead>
-            <tbody>
-              {responses.map((r) => (
-                <tr key={r.id}>
-                  <td><b>{r.developerName}</b></td>
-                  <td>{DISCOVERY_STATUS_LABEL[r.status]}</td>
-                  <td className="num">{formatDate(r.submittedAt)}</td>
-                  <td className="row-actions">
-                    {r.status === "submitted" && gameStatus === "discovery" && (
-                      <button type="button" className="btn quiet" disabled={busy} onClick={() => reopen(r)}>Reopen</button>
-                    )}
-                    <button type="button" className="btn quiet" disabled={busy} onClick={() => setRemoving(r)}>Remove</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ul className="responses-list">
+          {responses.map((r) => (
+            <li key={r.id}>
+              <div className="responses-who">
+                <button type="button" className="link-btn" onClick={() => onView(r.id)}>{r.developerName}</button>
+                <small className="hint">
+                  {DISCOVERY_STATUS_LABEL[r.status]}{r.submittedAt ? ` · ${formatDate(r.submittedAt)}` : ""}
+                </small>
+              </div>
+              <div className="row-actions">
+                <button type="button" className="btn quiet" onClick={() => onView(r.id)}>View answers</button>
+                <ExportDropdown
+                  label="Export"
+                  ariaLabel={`Export ${r.developerName}'s answers`}
+                  buildMarkdown={() => buildDiscoveryMarkdown(state, [toExportResponse(r)])}
+                  fileName={() => discoveryFileName(gameName, r.developerName)}
+                />
+                {r.status === "submitted" && canReopen && (
+                  <button type="button" className="btn quiet" disabled={busy} onClick={() => reopen(r)}>Reopen</button>
+                )}
+                <button type="button" className="btn quiet" disabled={busy} onClick={() => setRemoving(r)}>Remove</button>
+              </div>
+            </li>
+          ))}
+        </ul>
       )}
       {error && <p className="form-error" role="alert">{error}</p>}
       {removing && (

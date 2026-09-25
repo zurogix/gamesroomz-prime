@@ -427,6 +427,13 @@ a.btn{text-decoration:none}
 .submitted-card h1{font-size:24px}
 .submitted-card p{margin:0}
 .submitted-card .pager-actions{align-items:center;gap:16px}
+.responses-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.responses-list{list-style:none;margin:0;padding:0;border:1px solid var(--line);border-radius:10px}
+.responses-list li{display:flex;justify-content:space-between;align-items:center;gap:8px 16px;flex-wrap:wrap;padding:10px 14px}
+.responses-list li+li{border-top:1px solid var(--line)}
+.responses-who{display:flex;flex-direction:column;gap:2px}
+.responses-who .link-btn{font-weight:700;text-align:left}
+.responses-list .row-actions{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
 .rail-note{margin:0;font-size:13px;line-height:1.5;color:var(--muted)}
 .rail-stage-note{display:block;margin-top:6px}
 .viewing-bar{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}

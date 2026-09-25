@@ -2,11 +2,19 @@ import { answerDetails, answerSummary, describeChoice, describeOpen, EMPTY } fro
 import { DISCOVERY_QUESTIONS, DISCOVERY_SECTIONS, PROJECT_FILES } from "./discovery";
 import { AnswerMap, answerFor, discoveryAttention, isAnswered, isNotSure } from "./discoveryAnswers";
 import { DiscoveryQuestion, QuestionAnswer } from "./discoveryTypes";
-import { DISCOVERY_STATUS_LABEL, DiscoveryStatus } from "./responses";
+import { DISCOVERY_STATUS_LABEL, DiscoveryResponseData, DiscoveryStatus } from "./responses";
 import { AssessmentState } from "./types";
 
-/** One developer's answers in an export. */
-export type ExportResponse = { name: string; status: DiscoveryStatus; answers: AnswerMap };
+/**
+ * One developer's answers in an export. Only the name, status and dates are included — never emails
+ * or internal ids. submittedAt: null means not submitted yet; omitted when unknown (older saved versions).
+ */
+export type ExportResponse = { name: string; status: DiscoveryStatus; answers: AnswerMap; submittedAt?: string | null };
+
+/** A stored response as it appears in an export. */
+export function toExportResponse(r: Pick<DiscoveryResponseData, "developerName" | "status" | "answers" | "submittedAt">): ExportResponse {
+  return { name: r.developerName, status: r.status, answers: r.answers, submittedAt: r.submittedAt };
+}
 
 const NO_RESPONSES = "_No developer has started discovery yet._";
 
@@ -69,6 +77,16 @@ function sectionLines(responses: ExportResponse[]): string[] {
   ]);
 }
 
+const day = (iso: string) => iso.slice(0, 10);
+
+/** The header lines for the answers included: one developer in detail, or everyone on one line. */
+function respondentLines(responses: ExportResponse[]): string[] {
+  if (responses.length !== 1) return [`- Answers from: ${responses.map(byLine).join(", ") || EMPTY}`];
+  const [r] = responses;
+  const submitted = r.submittedAt === undefined ? [] : [`- Submitted: ${r.submittedAt ? day(r.submittedAt) : "Not submitted yet"}`];
+  return [`- Developer: ${r.name}`, `- Status: ${DISCOVERY_STATUS_LABEL[r.status]}`, ...submitted];
+}
+
 /**
  * The discovery record as Markdown, in question order, ending with open items (Not sure, Assumption,
  * Needs investigation) and unanswered questions. With one response (a
@@ -80,12 +98,12 @@ export function buildDiscoveryMarkdown(state: AssessmentState, responses: Export
   const open = openItems(responses);
   return [
     `# Prime discovery — ${g.gameName || "Untitled game"}`,
-    `_Exported ${exportedAt.toISOString().slice(0, 10)}_`,
+    `_Exported ${day(exportedAt.toISOString())}_`,
     "",
     "## Game information",
     `- Game name: ${g.gameName || EMPTY}`,
     `- Developer / team: ${g.developer || EMPTY}`,
-    `- Answers from: ${responses.map(byLine).join(", ") || EMPTY}`,
+    ...respondentLines(responses),
     "",
     ...(responses.length ? sectionLines(responses) : [NO_RESPONSES, ""]),
     "## Open items",
