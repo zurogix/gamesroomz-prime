@@ -1,18 +1,24 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { clearLocalDrafts, readImportableDraft } from "@/lib/importDraft";
+import { hasLocalDraft } from "@/lib/localDraftKeys";
 import type { GameSummary } from "@/lib/server/games";
 import type { AssessmentState } from "@/lib/types";
 import { CurrentUser } from "@/components/UserBadge";
-import { importToGame, ImportTarget } from "./importToGame";
+import type { ImportTarget } from "./importToGame";
 
 const NEW_GAME = "__new__";
 
 type Props = { user: CurrentUser; games: GameSummary[]; onImported: () => void };
 
-function readLocalDraft(): AssessmentState | null {
+/**
+ * The import code (including the Zod schema) is loaded only when this browser actually has a
+ * draft from the local-only version, so the games list stays light for everyone else.
+ */
+async function readLocalDraft(): Promise<AssessmentState | null> {
   try {
+    if (!hasLocalDraft(localStorage)) return null;
+    const { readImportableDraft } = await import("@/lib/importDraft");
     return readImportableDraft(localStorage);
   } catch {
     return null;
@@ -30,10 +36,11 @@ export default function ImportDraftBanner({ user, games, onImported }: Props) {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    const local = readLocalDraft();
-    setDraft(local);
-    setNewName(local?.gameInfo.gameName ?? "");
-    setChoice(games[0]?.id ?? (canCreate ? NEW_GAME : ""));
+    readLocalDraft().then((local) => {
+      setDraft(local);
+      setNewName(local?.gameInfo.gameName ?? "");
+      setChoice(games[0]?.id ?? (canCreate ? NEW_GAME : ""));
+    });
   }, [games, canCreate]);
 
   if (done) return <p className="import-banner" role="status">Draft imported. <a href={`/games/${done}`}>Open the game</a>.</p>;
@@ -46,6 +53,7 @@ export default function ImportDraftBanner({ user, games, onImported }: Props) {
     if (target.kind === "existing" && !window.confirm("This replaces the game's current answers and plan with the draft. Continue?")) return;
     setBusy(true);
     setError("");
+    const [{ importToGame }, { clearLocalDrafts }] = await Promise.all([import("./importToGame"), import("@/lib/importDraft")]);
     const result = await importToGame(draft, target, user.role);
     setBusy(false);
     if (!result.ok) return setError(result.error);

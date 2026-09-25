@@ -2,8 +2,9 @@ import { hydrateAssessment } from "./assessment";
 import { LegacyDraft, migrateV1Draft } from "./migrate";
 import { AssessmentState } from "./types";
 
-export const STORAGE_KEY = "gamesroomz-prime-assessment-v2";
-export const LEGACY_STORAGE_KEY = "gamesroomz-prime-assessment-v1";
+import { LEGACY_STORAGE_KEY, STORAGE_KEY } from "./localDraftKeys";
+
+export { LEGACY_STORAGE_KEY, STORAGE_KEY };
 
 export type LoadedDraft = { state: AssessmentState; migrated: boolean };
 

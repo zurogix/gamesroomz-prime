@@ -27,10 +27,12 @@ type Props = {
   initialState: AssessmentState;
   initialVersion: number;
   user: CurrentUser;
+  /** Loads the latest saved version after a conflict; resolves to an error message or null. */
+  onReload: () => Promise<string | null>;
 };
 
 /** The assessment workspace for one game: edits in memory, saves through the API. */
-export default function PortalWorkspace({ gameId, initialState, initialVersion, user }: Props) {
+export default function PortalWorkspace({ gameId, initialState, initialVersion, user, onReload }: Props) {
   const {
     state, updateGameInfo, updatePrimeTargets, updateAnswer,
     updateEngineAssessment, updateEngineOption, updatePlan, setStatus, toggleCheck,
@@ -144,7 +146,7 @@ export default function PortalWorkspace({ gameId, initialState, initialVersion, 
           user={user}
         />
         <main className="main">
-          {saveStatus.state === "conflict" && <ConflictBanner />}
+          {saveStatus.state === "conflict" && <ConflictBanner onReload={onReload} />}
           {renderView()}
         </main>
         <PageRail view={view} state={state} onJumpToQuestion={jumpToQuestion} onOpenWorkstream={openWorkstream} />

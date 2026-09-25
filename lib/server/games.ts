@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { hydrateAssessment, initialAssessment } from "@/lib/assessment";
 import type { AssessmentState, AssessmentStatus } from "@/lib/types";
 import { db } from "./db";
+import { GAME_LIST_SELECT } from "./gameListSelect";
 import { fromDbStatus, toDbStatus } from "./statusMap";
 import type { SessionProfile } from "./auth";
 
@@ -28,7 +29,7 @@ export async function listGames(): Promise<GameSummary[]> {
   const games = await db.game.findMany({
     where: active,
     orderBy: { updatedAt: "desc" },
-    include: { assessment: { include: { updatedBy: { select: { name: true } } } } },
+    select: GAME_LIST_SELECT,
   });
   return games.map((g) => ({
     id: g.id,

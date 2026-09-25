@@ -1,5 +1,5 @@
 import type { Profile } from "@prisma/client";
-import type { User } from "@supabase/supabase-js";
+import { cache } from "react";
 import { serverEnv } from "@/lib/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { db } from "./db";
@@ -9,32 +9,49 @@ export const NO_ACCESS_MESSAGE = "Your account doesn't have access to this porta
 
 export type SessionProfile = Pick<Profile, "id" | "email" | "name" | "role">;
 
-export async function getSessionUser(): Promise<User | null> {
-  const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.auth.getUser();
-  if (error) return null;
-  return data.user;
-}
+/** Who the session token belongs to. Access still requires an active Profile (see getProfile). */
+export type SessionIdentity = { id: string; email: string; name: string };
+
+/**
+ * Verifies the session token. With asymmetric JWT signing keys getClaims() checks the signature
+ * locally; otherwise it falls back to asking Supabase Auth. cache(): at most once per request.
+ */
+export const getSessionUser = cache(async (): Promise<SessionIdentity | null> => {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const { data, error } = await supabase.auth.getClaims();
+    if (error || !data?.claims.sub) return null;
+    const { sub, email, user_metadata: metadata } = data.claims;
+    const name = typeof metadata?.name === "string" ? metadata.name : "";
+    return { id: sub, email: email?.toLowerCase() ?? "", name };
+  } catch (err) {
+    console.error("[auth] session check failed", err);
+    return null;
+  }
+});
 
 const toSessionProfile = ({ id, email, name, role }: Profile): SessionProfile => ({ id, email, name, role });
 
 /** The bootstrap product user gets a profile on first login. A removed (soft-deleted) profile stays removed. */
-async function bootstrapProfile(user: User): Promise<Profile | null> {
-  const email = user.email?.toLowerCase() ?? "";
+async function bootstrapProfile(identity: SessionIdentity): Promise<Profile | null> {
+  const { id, email } = identity;
   const bootstrapEmail = serverEnv.bootstrapProductEmail();
   if (!bootstrapEmail || email !== bootstrapEmail) return null;
-  const name = (user.user_metadata?.name as string | undefined) ?? email.split("@")[0];
+  const name = identity.name || email.split("@")[0];
   // upsert: two first requests may race; the second simply reads the created profile.
-  return db.profile.upsert({ where: { id: user.id }, create: { id: user.id, email, name, role: "product" }, update: {} });
+  return db.profile.upsert({ where: { id }, create: { id, email, name, role: "product" }, update: {} });
 }
 
-/** The active profile for a signed-in user, or null when they have no access. */
-export async function getProfile(user: User): Promise<SessionProfile | null> {
-  const existing = await db.profile.findUnique({ where: { id: user.id } });
+/**
+ * The active profile for a signed-in user, or null when they have no access (no profile, or a
+ * removed one with deletedAt set). cache(): at most once per request for the same identity.
+ */
+export const getProfile = cache(async (identity: SessionIdentity): Promise<SessionProfile | null> => {
+  const existing = await db.profile.findUnique({ where: { id: identity.id } });
   if (existing) return existing.deletedAt ? null : toSessionProfile(existing);
-  const created = await bootstrapProfile(user);
+  const created = await bootstrapProfile(identity);
   return created ? toSessionProfile(created) : null;
-}
+});
 
 /** For API routes: the caller's profile, or a 401/403 response. */
 export async function requireProfile(): Promise<Result<SessionProfile>> {
