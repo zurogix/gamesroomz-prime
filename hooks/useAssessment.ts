@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { applyEngineEstimate, initialAssessment, syncPlanFromAssessment } from "@/lib/assessment";
+import { applyEngineEstimate, initialAssessment } from "@/lib/assessment";
+import { answerFor } from "@/lib/discoveryAnswers";
+import { QuestionAnswer } from "@/lib/discoveryTypes";
 import { LEGACY_STORAGE_KEY, readDraft, STORAGE_KEY } from "@/lib/draftStorage";
-import { AssessmentState, EngineOptionEstimate, GameInfo, MultiplayerEngineAssessment, QuestionResponse, Workstream } from "@/lib/types";
+import { AssessmentState, EngineOptionEstimate, GameInfo, MultiplayerEngineAssessment, PrimeTargets, Workstream } from "@/lib/types";
 
 const SAVE_DELAY_MS = 300;
 
@@ -44,11 +46,12 @@ export function useAssessment() {
     setState((s) => ({ ...s, gameInfo: { ...s.gameInfo, [key]: value } }));
   }, []);
 
-  const updateResponse = useCallback((id: string, patch: Partial<QuestionResponse>) => {
-    setState((s) => ({
-      ...s,
-      responses: { ...s.responses, [id]: { ...s.responses[id], ...patch } },
-    }));
+  const updatePrimeTargets = useCallback((patch: Partial<PrimeTargets>) => {
+    setState((s) => ({ ...s, primeTargets: { ...s.primeTargets, ...patch } }));
+  }, []);
+
+  const updateAnswer = useCallback((id: string, update: (answer: QuestionAnswer) => QuestionAnswer) => {
+    setState((s) => ({ ...s, answers: { ...s.answers, [id]: update(answerFor(s.answers, id)) } }));
   }, []);
 
   const updateEngineAssessment = useCallback((patch: Partial<MultiplayerEngineAssessment>) => {
@@ -77,14 +80,6 @@ export function useAssessment() {
     setState((s) => ({ ...s, checks: s.checks.map((c, i) => (i === index ? !c : c)) }));
   }, []);
 
-  const syncPlan = useCallback(() => {
-    setState((s) => ({
-      ...s,
-      plan: syncPlanFromAssessment(s),
-      status: s.status === "draft" ? "planning" : s.status,
-    }));
-  }, []);
-
   const dismissMigrationNotice = useCallback(() => setMigrationNotice(false), []);
 
   const reset = useCallback(() => {
@@ -105,13 +100,13 @@ export function useAssessment() {
     migrationNotice,
     dismissMigrationNotice,
     updateGameInfo,
-    updateResponse,
+    updatePrimeTargets,
+    updateAnswer,
     updateEngineAssessment,
     updateEngineOption,
     updatePlan,
     setStatus,
     toggleCheck,
-    syncPlan,
     reset,
   };
 }

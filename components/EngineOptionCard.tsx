@@ -6,17 +6,16 @@ import EngineNumberField from "./EngineNumberField";
 type Props = {
   title: string;
   subtitle: string;
-  recommended: boolean;
   value: EngineOptionEstimate;
   onChange: (patch: Partial<EngineOptionEstimate>) => void;
 };
 
-export default function EngineOptionCard({ title, subtitle, recommended, value, onChange }: Props) {
+export default function EngineOptionCard({ title, subtitle, value, onChange }: Props) {
   return (
-    <section className={`engine-option ${recommended ? "recommended" : ""}`}>
+    <section className="engine-option">
       <div className="engine-option-head">
         <div>
-          <span className="label">{recommended ? "Recommended path" : "Architecture path"}</span>
+          <span className="label">Architecture path</span>
           <h3>{title}</h3>
           <p>{subtitle}</p>
         </div>

@@ -1,14 +1,8 @@
 import { CSSProperties } from "react";
-import {
-  assessmentCoverage,
-  attentionItems,
-  calculateComplexity,
-  classificationCounts,
-  planCoverage,
-  totalPlanDays,
-} from "@/lib/assessment";
-import { questions } from "@/lib/questions";
-import { CLASSES, CLASS_LABEL, COMPLEXITY_BANDS, formatDays } from "@/lib/sections";
+import { planCoverage, totalPlanDays } from "@/lib/assessment";
+import { discoveryAttention, discoveryCoverage } from "@/lib/discoveryAnswers";
+import { scopeProfile } from "@/lib/scopeProfile";
+import { CLASSES, CLASS_LABEL, formatDays } from "@/lib/sections";
 import { AssessmentState } from "@/lib/types";
 
 type Props = {
@@ -25,62 +19,47 @@ function preview(text: string) {
 }
 
 export default function SummaryRail({ state, onJumpToQuestion, onOpenWorkstream }: Props) {
-  const complexity = calculateComplexity(state);
-  const counts = classificationCounts(state);
-  const attention = attentionItems(state);
+  const profile = scopeProfile(state.plan);
+  const attention = discoveryAttention(state.answers);
   const highRisk = state.plan.filter((w) => w.risk === "high");
-  const assessPct = assessmentCoverage(state);
+  const discoveryPct = discoveryCoverage(state.answers);
   const planPct = planCoverage(state);
-  const total = questions.length;
+  const total = state.plan.length;
+  const countFor = (c: string) => state.plan.filter((w) => w.classification === c).length;
 
   return (
     <aside className="rail" aria-label="Live summary">
       <section>
-        <span className="label">Conversion scope</span>
-        <div className="rail-verdict">{complexity.label}</div>
-        <div className="gauge">
-          {COMPLEXITY_BANDS.map((b, i) => <div key={b} className={i <= complexity.index ? "on" : ""} />)}
+        <span className="label">Scope profile</span>
+        <div className="rail-verdict">{profile.incomplete ?? `${total} workstreams classified`}</div>
+        <div className="stack">
+          {CLASSES.map((c) => <i key={c} style={{ width: `${(countFor(c) / total) * 100}%`, background: `var(--${c})` }} />)}
         </div>
-        <div className="gauge-labels">
-          {COMPLEXITY_BANDS.map((b, i) => <span key={b} className={i === complexity.index ? "on" : ""}>{b}</span>)}
+        <div className="legend">
+          {CLASSES.map((c) => <span key={c} style={tone(`var(--${c})`)}>{CLASS_LABEL[c]}<b>{countFor(c)}</b></span>)}
+          <span style={tone("var(--line-2)")}>Unclassified<b>{profile.unclassified}</b></span>
         </div>
       </section>
 
       <section>
         <span className="label">Planned effort</span>
         <div className="big num">{formatDays(totalPlanDays(state))}<small>person-days</small></div>
-        <div className="progress-line"><span>Assessment</span><span className="num">{assessPct}%</span></div>
-        <div className="bar"><i style={{ width: `${assessPct}%` }} /></div>
+        <div className="progress-line"><span>Discovery</span><span className="num">{discoveryPct}%</span></div>
+        <div className="bar"><i style={{ width: `${discoveryPct}%` }} /></div>
         <div className="progress-line"><span>Plan</span><span className="num">{planPct}%</span></div>
         <div className="bar"><i style={{ width: `${planPct}%` }} /></div>
       </section>
 
       <section>
-        <span className="label">Impact across {total} questions</span>
-        <div className="stack">
-          {CLASSES.map((c) => <i key={c} style={{ width: `${(counts[c] / total) * 100}%`, background: `var(--${c})` }} />)}
-        </div>
-        <div className="legend">
-          {CLASSES.map((c) => <span key={c} style={tone(`var(--${c})`)}>{CLASS_LABEL[c]}<b>{counts[c]}</b></span>)}
-          <span style={tone("var(--line-2)")}>Unclassified<b>{counts.none}</b></span>
-        </div>
-      </section>
-
-      <section>
-        <span className="label">Needs attention · {attention.length}</span>
+        <span className="label">To follow up · {attention.length}</span>
         <div className="att">
-          {attention.length === 0 && <span className="hint">Nothing flagged.</span>}
-          {attention.map(({ question, kind, classification }) => (
-            <button
-              key={question.id}
-              type="button"
-              style={tone(kind === "reason" ? `var(--${classification})` : "var(--warn)")}
-              onClick={() => onJumpToQuestion(question.id)}
-            >
+          {attention.length === 0 && <span className="hint">Nothing noted yet.</span>}
+          {attention.map(({ question, reason }) => (
+            <button key={question.id} type="button" style={tone("var(--warn)")} onClick={() => onJumpToQuestion(question.id)}>
               <i />
               <span>
-                {kind === "reason" && classification ? `${CLASS_LABEL[classification]} without an explanation` : "Answered “Not sure”"}
-                <em>{question.section} — {preview(question.prompt)}</em>
+                {question.id} · {reason}
+                <em>{preview(question.prompt)}</em>
               </span>
             </button>
           ))}

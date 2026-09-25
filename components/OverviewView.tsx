@@ -1,18 +1,20 @@
-import { assessmentCoverage, isQuestionDone, planCoverage, totalPlanDays } from "@/lib/assessment";
-import { questions } from "@/lib/questions";
-import { ASSESSMENT_SECTIONS } from "@/lib/sections";
-import { AssessmentState, GameInfo, Question } from "@/lib/types";
+import { planCoverage, totalPlanDays } from "@/lib/assessment";
+import { DISCOVERY_QUESTIONS, DISCOVERY_SECTIONS } from "@/lib/discovery";
+import { answerFor, discoveryCoverage, isAnswered, sectionProgress } from "@/lib/discoveryAnswers";
+import { AssessmentState, GameInfo, PrimeTargets } from "@/lib/types";
 import PageHeader from "./PageHeader";
+import PrimeTargetsCard from "./PrimeTargetsCard";
 
 type Props = {
   state: AssessmentState;
   savedAt: number | null;
   onGameInfo: (key: keyof GameInfo, value: string) => void;
+  onPrimeTargets: (patch: Partial<PrimeTargets>) => void;
   onNavigate: (view: string) => void;
 };
 
 const STEPS = [
-  { title: "Assess", text: "What exists today?" },
+  { title: "Discover", text: "How is the game built today?" },
   { title: "Classify", text: "Reuse, extend, refactor, rewrite, new or remove?" },
   { title: "Plan", text: "How will Prime support be built?" },
   { title: "Estimate", text: "Person-days and risks" },
@@ -25,14 +27,16 @@ const GAME_FIELDS: { key: keyof GameInfo; label: string; placeholder?: string }[
   { key: "currentAndroidApi", label: "Current Android API / SDK", placeholder: "If known" },
 ];
 
-export default function OverviewView({ state, savedAt, onGameInfo, onNavigate }: Props) {
-  const isDone = (q: Question) => isQuestionDone(state, q);
-  const next = ASSESSMENT_SECTIONS.find((s) => questions.some((q) => q.section === s && !isDone(q)));
-  const nextQs = questions.filter((q) => q.section === next);
-  const remaining = questions.filter((q) => !isDone(q)).length;
+export default function OverviewView({ state, savedAt, onGameInfo, onPrimeTargets, onNavigate }: Props) {
+  const next = DISCOVERY_SECTIONS.find((s) => {
+    const { done, total } = sectionProgress(state.answers, s.id);
+    return done < total;
+  });
+  const nextProgress = next ? sectionProgress(state.answers, next.id) : null;
+  const remaining = DISCOVERY_QUESTIONS.filter((q) => !isAnswered(q, answerFor(state.answers, q.id))).length;
   const stepDone = [
-    assessmentCoverage(state) === 100,
-    questions.every((q) => state.responses[q.id]?.classification),
+    discoveryCoverage(state.answers) === 100,
+    state.plan.every((w) => w.classification),
     planCoverage(state) === 100,
     totalPlanDays(state) > 0 && state.plan.every((w) => w.personDays > 0),
   ];
@@ -41,21 +45,21 @@ export default function OverviewView({ state, savedAt, onGameInfo, onNavigate }:
     <>
       <PageHeader title="Overview" crumb={`${state.gameInfo.gameName || "Untitled game"} → Gamesroomz Prime`} savedAt={savedAt} />
       <div className="content">
-        {next && (
+        {next && nextProgress && (
           <div className="resume">
             <div>
-              <b>Continue with {next}</b>
-              <p>{nextQs.filter((q) => isDone(q)).length} of {nextQs.length} answered · {remaining} questions left overall</p>
+              <b>Continue with {next.id} · {next.title}</b>
+              <p>{nextProgress.done} of {nextProgress.total} answered · {remaining} questions left overall</p>
             </div>
-            <button type="button" className="btn" onClick={() => onNavigate(next)}>Resume assessment →</button>
+            <button type="button" className="btn" onClick={() => onNavigate(next.title)}>Resume discovery →</button>
           </div>
         )}
 
         <section className="card">
-          <h2>Define what “redo” actually means</h2>
+          <h2>Plan the Prime version together</h2>
           <p className="lead">
-            Separate reusable game content from real Prime conversion work. Assess the existing game, classify every area,
-            then document the implementation plan, dependencies, risks and person-days for each workstream.
+            Developers describe how the current game is built; the product team records the Prime targets. Together we
+            classify each workstream, compare the options, and agree on a plan with its effort and risks.
           </p>
           <ol className="steps">
             {STEPS.map((step, i) => (
@@ -67,29 +71,19 @@ export default function OverviewView({ state, savedAt, onGameInfo, onNavigate }:
           </ol>
         </section>
 
-        <div className="grid-2">
-          <section className="card">
-            <span className="label">Game information</span>
-            <div className="form-grid">
-              {GAME_FIELDS.map((f) => (
-                <div className="field" key={f.key}>
-                  <label htmlFor={`gi-${f.key}`}>{f.label}</label>
-                  <input type="text" id={`gi-${f.key}`} value={state.gameInfo[f.key]} placeholder={f.placeholder} onChange={(e) => onGameInfo(f.key, e.target.value)} />
-                </div>
-              ))}
-            </div>
-          </section>
-          <section className="card">
-            <span className="label">Target conversion</span>
-            <dl className="facts">
-              <dt>Prime OS</dt><dd>Android</dd>
-              <dt>Prime screen</dt><dd>16:9 tabletop display</dd>
-              <dt>Existing game</dt><dd>{state.gameInfo.currentMultiplayer}</dd>
-              <dt>Prime target</dt><dd>{state.gameInfo.targetPlayers}</dd>
-              <dt>Game layout</dt><dd>Two vertical P1/P2 playfields</dd>
-            </dl>
-          </section>
-        </div>
+        <PrimeTargetsCard targets={state.primeTargets} onChange={onPrimeTargets} />
+
+        <section className="card">
+          <span className="label">Game information</span>
+          <div className="form-grid">
+            {GAME_FIELDS.map((f) => (
+              <div className="field" key={f.key}>
+                <label htmlFor={`gi-${f.key}`}>{f.label}</label>
+                <input type="text" id={`gi-${f.key}`} value={state.gameInfo[f.key]} placeholder={f.placeholder} onChange={(e) => onGameInfo(f.key, e.target.value)} />
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
     </>
   );

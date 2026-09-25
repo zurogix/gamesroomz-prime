@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { planFieldsDone, PLAN_FIELD_COUNT, totalPlanDays } from "@/lib/assessment";
+import { engineAssessmentIssues, planFieldsDone, PLAN_FIELD_COUNT, totalPlanDays } from "@/lib/assessment";
 import { formatDays, SUMMARY } from "@/lib/sections";
-import { AssessmentState, Workstream } from "@/lib/types";
+import { AssessmentState, EngineOptionEstimate, MultiplayerEngineAssessment, Workstream } from "@/lib/types";
+import MultiplayerEnginePanel from "./MultiplayerEnginePanel";
 import PageHeader from "./PageHeader";
 import PlanTableRow from "./PlanTableRow";
 
@@ -13,7 +14,8 @@ type Props = {
   state: AssessmentState;
   savedAt: number | null;
   onOpen: (id: string) => void;
-  onSync: () => void;
+  onEngineChange: (patch: Partial<MultiplayerEngineAssessment>) => void;
+  onEngineOptionChange: (option: "sharedCore" | "separatePrime", patch: Partial<EngineOptionEstimate>) => void;
   onNavigate: (view: string) => void;
 };
 
@@ -40,7 +42,7 @@ function sortValue(w: Workstream, key: SortKey): string | number {
   return w[key];
 }
 
-export default function PlanView({ state, savedAt, onOpen, onSync, onNavigate }: Props) {
+export default function PlanView({ state, savedAt, onOpen, onEngineChange, onEngineOptionChange, onNavigate }: Props) {
   const [sort, setSort] = useState<{ key: SortKey | null; dir: number }>({ key: null, dir: 1 });
   const [grouped, setGrouped] = useState(false);
 
@@ -55,7 +57,7 @@ export default function PlanView({ state, savedAt, onOpen, onSync, onNavigate }:
 
   return (
     <>
-      <PageHeader title="Conversion Plan" crumb={crumb} savedAt={savedAt} actions={<button type="button" className="btn" onClick={onSync}>Sync from assessment</button>} />
+      <PageHeader title="Conversion Plan" crumb={crumb} savedAt={savedAt} />
       <div className="content">
         <div className="toolbar">
           <div className="seg" role="group" aria-label="Grouping">
@@ -101,8 +103,17 @@ export default function PlanView({ state, savedAt, onOpen, onSync, onNavigate }:
           </table>
         </div>
 
+        <div id="engine-options">
+          <MultiplayerEnginePanel
+            value={state.engineAssessment}
+            issues={engineAssessmentIssues(state.engineAssessment)}
+            onChange={onEngineChange}
+            onOptionChange={onEngineOptionChange}
+          />
+        </div>
+
         <div className="pager">
-          <span className="hint">{incomplete} workstreams still missing detail</span>
+          <span className="hint">{incomplete} workstreams with details still to add</span>
           <button type="button" className="btn primary" onClick={() => onNavigate(SUMMARY)}>Generate management summary →</button>
         </div>
       </div>

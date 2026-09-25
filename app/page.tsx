@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import AssessmentSection from "@/components/AssessmentSection";
 import CommandPalette, { PaletteTarget } from "@/components/CommandPalette";
+import DiscoverySection from "@/components/DiscoverySection";
 import MigrationNotice from "@/components/MigrationNotice";
 import OverviewView from "@/components/OverviewView";
 import PlanDrawer from "@/components/PlanDrawer";
@@ -12,12 +12,13 @@ import SummaryRail from "@/components/SummaryRail";
 import SummaryView from "@/components/SummaryView";
 import { useAssessment } from "@/hooks/useAssessment";
 import { useTheme } from "@/hooks/useTheme";
-import { questions } from "@/lib/questions";
+import { DISCOVERY_QUESTIONS, sectionTitle } from "@/lib/discovery";
 import { ASSESSMENT_SECTIONS, OVERVIEW, PLAN, SUMMARY } from "@/lib/sections";
 
 export default function HomePage() {
   const {
-    state, savedAt, migrationNotice, dismissMigrationNotice, updateGameInfo, updateResponse, updateEngineAssessment, updateEngineOption, updatePlan, setStatus, toggleCheck, syncPlan, reset,
+    state, savedAt, migrationNotice, dismissMigrationNotice, updateGameInfo, updatePrimeTargets, updateAnswer,
+    updateEngineAssessment, updateEngineOption, updatePlan, setStatus, toggleCheck, reset,
   } = useAssessment();
   const { theme, setTheme } = useTheme();
   const [view, setView] = useState(OVERVIEW);
@@ -33,9 +34,9 @@ export default function HomePage() {
   }, []);
 
   const jumpToQuestion = useCallback((id: string) => {
-    const question = questions.find((q) => q.id === id);
+    const question = DISCOVERY_QUESTIONS.find((q) => q.id === id);
     if (!question) return;
-    setView(question.section);
+    setView(sectionTitle(question.section));
     setFocusId(id);
     setDrawerId(null);
   }, []);
@@ -44,11 +45,6 @@ export default function HomePage() {
     setView(PLAN);
     setDrawerId(id);
   }, []);
-
-  const continueToPlan = useCallback(() => {
-    syncPlan();
-    navigate(PLAN);
-  }, [syncPlan, navigate]);
 
   const resetAll = useCallback(() => {
     if (!window.confirm("Reset this assessment and remove the locally saved draft?")) return;
@@ -80,21 +76,27 @@ export default function HomePage() {
   function renderView() {
     if (ASSESSMENT_SECTIONS.includes(view)) {
       return (
-        <AssessmentSection
+        <DiscoverySection
           state={state}
-          section={view}
+          sectionTitle={view}
           savedAt={savedAt}
           focusId={focusId}
-          onChange={updateResponse}
-          onEngineChange={updateEngineAssessment}
-          onEngineOptionChange={updateEngineOption}
+          onAnswer={updateAnswer}
           onNavigate={navigate}
-          onContinueToPlan={continueToPlan}
         />
       );
     }
     if (view === PLAN) {
-      return <PlanView state={state} savedAt={savedAt} onOpen={setDrawerId} onSync={syncPlan} onNavigate={navigate} />;
+      return (
+        <PlanView
+          state={state}
+          savedAt={savedAt}
+          onOpen={setDrawerId}
+          onEngineChange={updateEngineAssessment}
+          onEngineOptionChange={updateEngineOption}
+          onNavigate={navigate}
+        />
+      );
     }
     if (view === SUMMARY) {
       return (
@@ -107,7 +109,9 @@ export default function HomePage() {
         />
       );
     }
-    return <OverviewView state={state} savedAt={savedAt} onGameInfo={updateGameInfo} onNavigate={navigate} />;
+    return (
+      <OverviewView state={state} savedAt={savedAt} onGameInfo={updateGameInfo} onPrimeTargets={updatePrimeTargets} onNavigate={navigate} />
+    );
   }
 
   return (

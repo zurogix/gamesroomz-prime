@@ -1,14 +1,7 @@
 import { ENGINE_WORKSTREAM_ID } from "./engine";
-import { planTemplate } from "./questions";
+import { planTemplate } from "./planTemplate";
 import { CLASSES, ImpactClass } from "./sections";
-import {
-  AssessmentState,
-  Classification,
-  MultiplayerEngineAssessment,
-  QuestionResponse,
-  SavedDraft,
-  Workstream,
-} from "./types";
+import { Classification, GameInfo, MultiplayerEngineAssessment, SavedDraft, Workstream } from "./types";
 
 const LEGACY_ARCHITECTURE_ID = "multiplayer-architecture";
 
@@ -52,28 +45,23 @@ const LEGACY_STRATEGY: Record<string, Classification> = {
   replace: "rewrite",
 };
 
-type LegacyResponse = Omit<Partial<QuestionResponse>, "classification"> & { classification?: string; effortDays?: number };
 type LegacyWorkstream = Omit<Partial<Workstream>, "classification"> & { id?: string; classification?: string };
 type LegacyEngine = Partial<MultiplayerEngineAssessment> & { strategy?: string; replaceReason?: string };
 
-export type LegacyDraft = Omit<Partial<AssessmentState>, "responses" | "plan" | "engineAssessment"> & {
-  responses?: Record<string, LegacyResponse>;
+/** A draft saved by the Yes/No version of the portal (v1 key, or v2 before discovery). */
+export type LegacyDraft = {
+  gameInfo?: Partial<GameInfo>;
+  responses?: Record<string, unknown>;
   plan?: LegacyWorkstream[];
   engineAssessment?: LegacyEngine;
+  status?: string;
+  checks?: boolean[];
+  lastSavedAt?: string;
 };
 
 /** "modify" no longer exists, so those items must be re-classified. */
 export function migrateClassification(value: string | undefined): Classification {
   return CLASSES.includes(value as ImpactClass) ? (value as Classification) : "";
-}
-
-function migrateResponses(responses: LegacyDraft["responses"] = {}): Record<string, QuestionResponse> {
-  return Object.fromEntries(
-    Object.entries(responses).map(([id, r]) => [
-      id,
-      { answer: r.answer ?? "", classification: migrateClassification(r.classification), explanation: r.explanation ?? "" },
-    ])
-  );
 }
 
 function appendLegacyText(target: Workstream, legacy: LegacyWorkstream | undefined): Workstream {
@@ -110,12 +98,18 @@ function migrateEngine(engine: LegacyEngine = {}): Partial<MultiplayerEngineAsse
   };
 }
 
-/** Converts a draft saved under the v1 storage key into the v2 shape (before hydration). */
+/**
+ * Converts a v1 draft into the v2 shape (before hydration). Game info, plan text,
+ * engine estimates and checks are kept; the old Yes/No answers and their
+ * per-question effort are not carried over.
+ */
 export function migrateV1Draft(draft: LegacyDraft): SavedDraft {
   return {
-    ...draft,
-    responses: migrateResponses(draft.responses),
+    gameInfo: draft.gameInfo,
     plan: migratePlan(draft.plan),
     engineAssessment: migrateEngine(draft.engineAssessment),
+    status: draft.status,
+    checks: draft.checks,
+    lastSavedAt: draft.lastSavedAt,
   };
 }

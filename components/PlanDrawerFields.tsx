@@ -2,6 +2,7 @@ import { ENGINE_WORKSTREAM_ID } from "@/lib/engine";
 import { MultiplayerEngineAssessment, Risk, ScopeType, Workstream } from "@/lib/types";
 import type { DrawerTab } from "./PlanDrawer";
 import EngineWorkstreamFacts from "./EngineWorkstreamFacts";
+import HelpMeChoose from "./HelpMeChoose";
 import ImpactButtons from "./ImpactButtons";
 import PlanTextArea, { PlanTextField } from "./PlanTextArea";
 
@@ -39,7 +40,10 @@ export default function PlanDrawerFields({ workstream: w, engine, tab, onChange 
     <>
       <div className="field">
         <span className="field-title" id="w-class">Classification</span>
-        <ImpactButtons value={w.classification} labelledBy="w-class" onChange={(classification) => onChange({ classification })} />
+        <div className="impact-row">
+          <ImpactButtons value={w.classification} labelledBy="w-class" onChange={(classification) => onChange({ classification })} />
+          <HelpMeChoose />
+        </div>
       </div>
       {isEngine && <EngineWorkstreamFacts workstream={w} engine={engine} />}
       <div className={isEngine ? "row-3 row-1" : "row-3"}>

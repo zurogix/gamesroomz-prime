@@ -1,7 +1,7 @@
 "use client";
 
 import { KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
-import { questions } from "@/lib/questions";
+import { DISCOVERY_QUESTIONS, sectionTitle } from "@/lib/discovery";
 import { ASSESSMENT_SECTIONS, OVERVIEW, PLAN, SUMMARY } from "@/lib/sections";
 import { Workstream } from "@/lib/types";
 
@@ -18,7 +18,7 @@ const MAX_RESULTS = 40;
 
 function buildItems(plan: Workstream[]): Item[] {
   const views = [OVERVIEW, ...ASSESSMENT_SECTIONS, PLAN, SUMMARY].map((v) => ({ text: v, kind: "Section", view: v }));
-  const qs = questions.map((q) => ({ text: q.prompt, kind: q.section, questionId: q.id }));
+  const qs = DISCOVERY_QUESTIONS.map((q) => ({ text: `${q.id} · ${q.prompt}`, kind: sectionTitle(q.section), questionId: q.id }));
   const ws = plan.map((w) => ({ text: w.title, kind: "Workstream", workstreamId: w.id }));
   return [...views, ...qs, ...ws];
 }

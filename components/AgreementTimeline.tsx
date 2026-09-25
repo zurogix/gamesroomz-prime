@@ -6,10 +6,10 @@ type Props = {
   onChange: (status: AssessmentState["status"]) => void;
 };
 
-export default function ApprovalTimeline({ status, onChange }: Props) {
+export default function AgreementTimeline({ status, onChange }: Props) {
   const current = STATUS_STEPS.findIndex((s) => s.value === status);
   return (
-    <div className="timeline" role="group" aria-label="Approval status">
+    <div className="timeline" role="group" aria-label="Agreement status">
       {STATUS_STEPS.map((step, i) => {
         const classes = [
           i < current ? "past" : "",

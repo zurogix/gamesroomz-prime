@@ -1,25 +1,27 @@
-export type Answer = "yes" | "no" | "unsure" | "";
+import type { QuestionAnswer } from "./discoveryTypes";
+
 export type Classification = "reuse" | "extend" | "refactor" | "rewrite" | "new" | "remove" | "";
 export type Risk = "low" | "medium" | "high";
 export type ScopeType = "mandatory" | "enhancement";
 export type Category = "game" | "platform";
 export type RecommendedPath = "shared" | "separate" | "";
 export type SharedCodeLevel = "high" | "medium" | "low" | "";
+export type CodebaseDecision = "shared" | "separate" | "undecided" | "";
+export type AssessmentStatus = "draft" | "assessment-complete" | "planning" | "submitted" | "changes-requested" | "agreed";
 
-export type Question = {
-  id: string;
-  section: string;
-  prompt: string;
-  helper?: string;
-  weight: number;
-  workstream: string;
-  category: Category;
-};
-
-export type QuestionResponse = {
-  answer: Answer;
-  classification: Classification;
-  explanation: string;
+/** Targets confirmed by the product team; shown to developers above the discovery form. */
+export type PrimeTargets = {
+  unityVersion: string;
+  androidApi: string;
+  resolution: string;
+  layout: string;
+  layoutSketch: string;
+  fpsTarget: string;
+  sdk: string;
+  firstRelease: string;
+  codebase: CodebaseDecision;
+  modes: string[];
+  modesOther: string;
 };
 
 export type EngineOptionEstimate = {
@@ -77,15 +79,20 @@ export type GameInfo = {
 
 export type AssessmentState = {
   gameInfo: GameInfo;
-  responses: Record<string, QuestionResponse>;
+  primeTargets: PrimeTargets;
+  answers: Record<string, QuestionAnswer>;
   engineAssessment: MultiplayerEngineAssessment;
   plan: Workstream[];
-  status: "draft" | "assessment-complete" | "planning" | "submitted" | "changes-requested" | "approved";
+  status: AssessmentStatus;
   checks: boolean[];
   lastSavedAt?: string;
 };
 
 /** A draft as read from storage: any part may be missing or out of date. */
-export type SavedDraft = Omit<Partial<AssessmentState>, "engineAssessment"> & {
+export type SavedDraft = Omit<Partial<AssessmentState>, "gameInfo" | "engineAssessment" | "primeTargets" | "answers" | "status"> & {
+  gameInfo?: Partial<GameInfo>;
   engineAssessment?: Partial<MultiplayerEngineAssessment>;
+  primeTargets?: Partial<PrimeTargets>;
+  answers?: Record<string, Partial<QuestionAnswer>>;
+  status?: string;
 };

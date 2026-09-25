@@ -1,6 +1,8 @@
 import { useEffect } from "react";
-import { assessmentCoverage, planFieldsDone, PLAN_FIELD_COUNT } from "@/lib/assessment";
-import { ASSESSMENT_SECTIONS, OVERVIEW, PLAN, SUMMARY } from "@/lib/sections";
+import { planFieldsDone, PLAN_FIELD_COUNT } from "@/lib/assessment";
+import { DISCOVERY_SECTIONS } from "@/lib/discovery";
+import { discoveryCoverage } from "@/lib/discoveryAnswers";
+import { OVERVIEW, PLAN, SUMMARY } from "@/lib/sections";
 import { AssessmentState } from "@/lib/types";
 import { ThemeChoice } from "@/hooks/useTheme";
 import ProgressRing from "./ProgressRing";
@@ -46,9 +48,9 @@ export default function Sidebar({ state, active, theme, onNavigate, onOpenPalett
       </button>
       <nav className="nav" aria-label="Sections">
         {navItem(OVERVIEW)}
-        <div className="nav-group label">Assessment · {assessmentCoverage(state)}%</div>
-        {ASSESSMENT_SECTIONS.map((s) => (
-          <SidebarSectionItem key={s} state={state} section={s} active={active === s} onNavigate={onNavigate} />
+        <div className="nav-group label">Discovery · {discoveryCoverage(state.answers)}%</div>
+        {DISCOVERY_SECTIONS.map((s) => (
+          <SidebarSectionItem key={s.id} state={state} section={s} active={active === s.title} onNavigate={onNavigate} />
         ))}
         <div className="nav-group label">Plan & report</div>
         {navItem(PLAN, [plansDone, state.plan.length])}

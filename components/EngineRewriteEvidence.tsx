@@ -11,20 +11,13 @@ export default function EngineRewriteEvidence({ value, onChange }: Props) {
 
   return (
     <div className="engine-replace">
-      <div className="engine-warning">
-        <b>Rewrite requires technical evidence.</b>
-        <span>
-          “Prime multiplayer is different” is not sufficient. Document why Extend/Refactor cannot reasonably work,
-          and identify what still survives from the existing game.
-        </span>
-      </div>
       <div className="grid-2">
         <label className="field">
-          <span>Why can the current engine not be extended/refactored? <em>required</em></span>
+          <span>What in the current code leads to this recommendation? <em>required</em></span>
           <textarea
             className={needsReason ? "warn" : ""}
             value={value.rewriteReason}
-            placeholder="Examples: pervasive NetworkBehaviour/RPC coupling, obsolete framework, game state inseparable from transport, unacceptable mobile regression risk."
+            placeholder="Refer to specific classes or behaviour, e.g. how game state, networking and player ownership are connected today."
             onChange={(e) => onChange({ rewriteReason: e.target.value })}
           />
         </label>

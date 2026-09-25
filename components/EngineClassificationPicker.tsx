@@ -1,5 +1,6 @@
 import { CLASS_HELP, CLASS_LABEL, ENGINE_CLASSES } from "@/lib/sections";
 import { Classification } from "@/lib/types";
+import HelpMeChoose from "./HelpMeChoose";
 
 type Props = {
   value: Classification;
@@ -23,6 +24,9 @@ export default function EngineClassificationPicker({ value, onChange }: Props) {
             <small>{CLASS_HELP[c]}</small>
           </button>
         ))}
+      </div>
+      <div className="impact-row engine-help">
+        <HelpMeChoose />
       </div>
     </div>
   );

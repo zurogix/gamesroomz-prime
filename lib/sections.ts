@@ -1,3 +1,4 @@
+import { DISCOVERY_SECTIONS } from "./discovery";
 import { AssessmentState, Classification } from "./types";
 
 export type ImpactClass = Exclude<Classification, "">;
@@ -6,17 +7,8 @@ export const OVERVIEW = "Overview";
 export const PLAN = "Conversion Plan";
 export const SUMMARY = "Management Summary";
 
-export const ASSESSMENT_SECTIONS = [
-  "Project Health",
-  "Unity & Android",
-  "Core Gameplay",
-  "PvP Architecture",
-  "Multiplayer Engine 2.0",
-  "Multi-Touch & Input",
-  "Prime 16:9 UI",
-  "Gamesroomz Integration",
-  "Prime Hardware & QA",
-];
+/** Each discovery section is its own view, named by its title. */
+export const ASSESSMENT_SECTIONS = DISCOVERY_SECTIONS.map((s) => s.title);
 
 export const CLASSES: ImpactClass[] = ["reuse", "extend", "refactor", "rewrite", "new", "remove"];
 
@@ -47,30 +39,22 @@ export const RECOMMENDED_PATH_LABEL = {
   separate: "Separate Prime Multiplayer Engine",
 } as const;
 
-export const ANSWERS = [
-  { value: "yes", label: "Yes" },
-  { value: "no", label: "No" },
-  { value: "unsure", label: "Not sure" },
-] as const;
-
 export const STATUS_STEPS: { value: AssessmentState["status"]; label: string }[] = [
   { value: "draft", label: "Draft" },
   { value: "assessment-complete", label: "Assessment complete" },
   { value: "planning", label: "Planning" },
   { value: "submitted", label: "Submitted for review" },
   { value: "changes-requested", label: "Changes requested" },
-  { value: "approved", label: "Approved" },
+  { value: "agreed", label: "Agreed" },
 ];
 
 export const CONFIRMATIONS = [
-  "The assessment accurately describes the existing game architecture.",
-  "All items classified as Rewrite/New include a technical reason and implementation approach.",
-  "Optional enhancements are separated from mandatory Prime conversion work.",
-  "Person-day estimates include implementation and developer testing assumptions.",
-  "The Multiplayer Engine 2.0 assessment compares a shared-core path with a separate Prime engine and documents the technical evidence behind the recommended path.",
+  "The discovery answers describe the current game as it is built today, with open items noted.",
+  "Workstreams marked Rewrite or New explain what in the current code leads to that choice.",
+  "Optional enhancements are listed separately from the work the first Prime release requires.",
+  "Person-day estimates include implementation and developer testing.",
+  "The Multiplayer Engine 2.0 comparison covers both paths and records the reasons for the recommended one.",
 ];
-
-export const COMPLEXITY_BANDS = ["Minor", "Moderate", "Major", "Rebuild"];
 
 export function riskColor(risk: string) {
   if (risk === "high") return "var(--risk-high)";

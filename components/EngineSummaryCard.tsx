@@ -13,7 +13,7 @@ export default function EngineSummaryCard({ engine }: Props) {
       <div className="engine-summary-head">
         <div>
           <span className="label">Multiplayer architecture decision</span>
-          <h2>Engine 2.0 vs separate Prime engine</h2>
+          <h2>Shared Engine 2.0 or separate Prime engine</h2>
         </div>
       </div>
       <dl className="engine-decision">
@@ -28,7 +28,7 @@ export default function EngineSummaryCard({ engine }: Props) {
       </dl>
       <div className="engine-summary-justification">
         <b>Why this path</b>
-        <p>{engine.pathJustification.trim() || "Justification for the recommended path is missing."}</p>
+        <p>{engine.pathJustification.trim() || "No reasons recorded yet."}</p>
       </div>
       <div className="engine-summary-grid">
         <EngineOptionSummary title={RECOMMENDED_PATH_LABEL.shared} option={engine.sharedCore} recommended={engine.recommendedPath === "shared"} />
@@ -40,10 +40,10 @@ export default function EngineSummaryCard({ engine }: Props) {
       </div>
       {engine.engineClassification === "rewrite" && (
         <div className="engine-summary-replace">
-          <b>Rewrite justification</b>
-          <p>{engine.rewriteReason || "Required technical justification is missing."}</p>
-          <b>Reusable components</b>
-          <p>{engine.reusableComponents || "Reusable components have not been identified."}</p>
+          <b>What in the current code leads to this recommendation</b>
+          <p>{engine.rewriteReason || "Not recorded yet."}</p>
+          <b>Existing components that will still be reused</b>
+          <p>{engine.reusableComponents || "Not recorded yet."}</p>
         </div>
       )}
     </section>

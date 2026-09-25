@@ -1,4 +1,4 @@
-import { EngineOptionEstimate, MultiplayerEngineAssessment } from "./types";
+import { EngineOptionEstimate, MultiplayerEngineAssessment, Workstream } from "./types";
 
 export const ENGINE_WORKSTREAM_ID = "multiplayer-engine-2";
 
@@ -63,9 +63,19 @@ export function engineAssessmentIssues(engine: MultiplayerEngineAssessment) {
   if (!engine.pathJustification.trim()) issues.push("Explain why this path was recommended");
 
   if (engine.engineClassification === "rewrite") {
-    if (!engine.rewriteReason.trim()) issues.push("A Rewrite decision requires a concrete technical reason.");
-    if (!engine.reusableComponents.trim()) issues.push("A Rewrite decision must still identify reusable components.");
+    if (!engine.rewriteReason.trim()) issues.push("Describe what in the current code leads to this recommendation.");
+    if (!engine.reusableComponents.trim()) issues.push("List the existing components that will still be reused.");
   }
 
   return issues;
+}
+
+/** Engine 2.0 effort and risk always come from the recommended path's estimate. */
+export function applyEngineEstimate(plan: Workstream[], engine: MultiplayerEngineAssessment): Workstream[] {
+  const estimate = selectedEngineEstimate(engine);
+  return plan.map((w) => {
+    if (w.id !== ENGINE_WORKSTREAM_ID) return w;
+    if (!estimate) return { ...w, personDays: 0 };
+    return { ...w, personDays: engineOptionTotal(estimate), risk: estimate.risk };
+  });
 }

@@ -6,7 +6,7 @@ type Props = { title: string; option: EngineOptionEstimate; recommended: boolean
 
 export default function EngineOptionSummary({ title, option, recommended }: Props) {
   return (
-    <div className={recommended ? "recommended" : ""}>
+    <div>
       <span className="label">{title}{recommended ? " · Recommended" : ""}</span>
       <b className="num">{formatDays(engineOptionTotal(option))} d</b>
       <small>Shared code: {option.sharedCode || "—"} · Risk: {option.risk}</small>

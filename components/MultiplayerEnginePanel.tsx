@@ -18,18 +18,9 @@ export default function MultiplayerEnginePanel({ value, issues, onChange, onOpti
     <section className="engine-panel">
       <div className="engine-intro">
         <div>
-          <span className="label">Architecture decision</span>
-          <h2>Multiplayer Engine 2.0 — shared core vs separate Prime engine</h2>
-          <p>
-            Assess whether the existing mobile PvP engine can evolve into one player-agnostic core for both
-            mobile and Prime. A separate Prime engine should be recommended only when the existing codebase
-            provides concrete technical reasons that make extending or refactoring impractical.
-          </p>
-        </div>
-        <div className="engine-principle">
-          <b>Preferred direction</b>
-          <span>One shared match core</span>
-          <small>Validate it — do not assume it.</small>
+          <span className="label">Architecture options</span>
+          <h2>Multiplayer Engine 2.0 — shared core or separate Prime engine</h2>
+          <p>Compare both paths on effort, risk and long-term maintenance, and record the recommended path with its reasons.</p>
         </div>
       </div>
 
@@ -62,20 +53,18 @@ export default function MultiplayerEnginePanel({ value, issues, onChange, onOpti
             <span className="label">2 · Cost both architecture paths</span>
             <h3>Compare initial effort and ongoing maintenance</h3>
           </div>
-          <span className="hint">These are alternatives. Only the recommended path counts toward the conversion plan.</span>
+          <span className="hint">These are alternatives. Only the recommended path counts toward the plan total.</span>
         </div>
         <div className="engine-options">
           <EngineOptionCard
             title="Shared Multiplayer Engine 2.0"
             subtitle="Refactor/extend the existing engine into a common match core with Mobile and Prime adapters."
-            recommended={value.recommendedPath === "shared"}
             value={value.sharedCore}
             onChange={(patch) => onOptionChange("sharedCore", patch)}
           />
           <EngineOptionCard
             title="Separate Prime Multiplayer Engine"
             subtitle="Build and maintain a Prime-specific multiplayer implementation alongside the existing mobile engine."
-            recommended={value.recommendedPath === "separate"}
             value={value.separatePrime}
             onChange={(patch) => onOptionChange("separatePrime", patch)}
           />
@@ -90,7 +79,7 @@ export default function MultiplayerEnginePanel({ value, issues, onChange, onOpti
           <textarea
             className="engine-plan-text"
             value={value.migrationPlan}
-            placeholder="Recommended if Shared Engine 2.0 is viable: (1) baseline mobile PvP and regression tests, (2) separate game state from networking, (3) generalize Players[] / PlayerId / SeatId / InputSource, (4) verify mobile behaviour, (5) add Prime multi-touch, UI and Gamesroomz adapters, (6) Prime hardware QA."
+            placeholder="Outline the steps for the recommended path, e.g. baseline mobile behaviour and tests, the main code changes in order, how mobile keeps working, Prime adapters, and hardware QA."
             onChange={(e) => onChange({ migrationPlan: e.target.value })}
           />
         </label>
@@ -98,7 +87,7 @@ export default function MultiplayerEnginePanel({ value, issues, onChange, onOpti
 
       {issues.length > 0 && (
         <div className="engine-issues">
-          <b>Architecture assessment still needs:</b>
+          <b>Still to record:</b>
           <ul>{issues.map((issue) => <li key={issue}>{issue}</li>)}</ul>
         </div>
       )}

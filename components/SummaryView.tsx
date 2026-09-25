@@ -1,18 +1,17 @@
 import { CSSProperties } from "react";
-import {
-  assessmentCoverage,
-  calculateComplexity,
-  deriveFindings,
-  planCoverage,
-  totalPlanDays,
-} from "@/lib/assessment";
+import { deriveFindings, planCoverage, totalPlanDays } from "@/lib/assessment";
+import { discoveryCoverage } from "@/lib/discoveryAnswers";
+import { describeModes } from "@/lib/primeTargets";
+import { scopeProfile } from "@/lib/scopeProfile";
 import { CLASSES, CLASS_LABEL, CONFIRMATIONS, formatDays } from "@/lib/sections";
 import { AssessmentState } from "@/lib/types";
-import ApprovalTimeline from "./ApprovalTimeline";
+import AgreementTimeline from "./AgreementTimeline";
 import EffortChart from "./EffortChart";
 import EngineSummaryCard from "./EngineSummaryCard";
+import ExportMenu from "./ExportMenu";
 import PageHeader from "./PageHeader";
 import RiskMatrix from "./RiskMatrix";
+import ScopeProfileCard from "./ScopeProfileCard";
 
 type Props = {
   state: AssessmentState;
@@ -23,38 +22,49 @@ type Props = {
 };
 
 export default function SummaryView({ state, savedAt, onOpenWorkstream, onStatus, onToggleCheck }: Props) {
-  const complexity = calculateComplexity(state);
+  const profile = scopeProfile(state.plan);
+  const modes = describeModes(state.primeTargets);
   const total = totalPlanDays(state);
   const mandatory = state.plan.filter((w) => w.scopeType === "mandatory").reduce((sum, w) => sum + (Number(w.personDays) || 0), 0);
   const enhancement = total - mandatory;
   const highRisk = state.plan.filter((w) => w.risk === "high");
   const findings = deriveFindings(state);
   const confirmed = state.checks.filter(Boolean).length;
-  const printButton = <button type="button" className="btn" onClick={() => window.print()}>Print report</button>;
+  const actions = (
+    <>
+      <ExportMenu state={state} />
+      <button type="button" className="btn" onClick={() => window.print()}>Print report</button>
+    </>
+  );
 
   return (
     <>
-      <PageHeader title="Management Summary" crumb={<>Report <span>·</span> Prepared for scope approval</>} savedAt={savedAt} actions={printButton} />
+      <PageHeader title="Management Summary" crumb={<>Report <span>·</span> Prepared for a shared scope agreement</>} savedAt={savedAt} actions={actions} />
       <div className="content">
         <section className="report-head">
           <div>
             <span className="label">Prime conversion assessment</span>
             <h2>{state.gameInfo.gameName || "Untitled game"}</h2>
-            <p>Existing mobile PvP → shared-device Prime multiplayer on Android, 16:9 tabletop display, simultaneous multi-touch and Gamesroomz integration.</p>
+            <p>
+              Existing mobile PvP → Gamesroomz Prime.
+              {modes.length > 0 ? ` First-release modes: ${modes.join(", ")}.` : " First-release modes not recorded yet."}
+            </p>
           </div>
           <div className="verdict">
-            <span>Overall conversion scope</span>
-            <b>{complexity.label}</b>
-            <small>{formatDays(total)} person-days across {state.plan.length} workstreams</small>
+            <span>Scope profile</span>
+            <b>{profile.incomplete ?? `${formatDays(total)} person-days`}</b>
+            <small>{state.plan.length} workstreams · {profile.game.count} game, {profile.platform.count} platform</small>
           </div>
         </section>
 
         <div className="kpis">
           <div className="kpi"><span className="label">Planned effort</span><b className="num">{formatDays(total)}</b><small>person-days</small></div>
-          <div className="kpi"><span className="label">Assessment</span><b className="num">{assessmentCoverage(state)}%</b><small>questions answered & classified</small></div>
+          <div className="kpi"><span className="label">Discovery</span><b className="num">{discoveryCoverage(state.answers)}%</b><small>questions answered</small></div>
           <div className="kpi"><span className="label">Plan detail</span><b className="num">{planCoverage(state)}%</b><small>workstreams fully documented</small></div>
           <div className="kpi"><span className="label">High risk</span><b className="num">{highRisk.length}</b><small>{highRisk.length ? highRisk.map((w) => w.title).join(", ") : "none"}</small></div>
         </div>
+
+        <ScopeProfileCard profile={profile} />
 
         <EngineSummaryCard engine={state.engineAssessment} />
 
@@ -69,15 +79,15 @@ export default function SummaryView({ state, savedAt, onOpenWorkstream, onStatus
               {enhancement > 0 && <div className="split-enhancement" style={{ flex: enhancement }}>Enhancement {formatDays(enhancement)} d</div>}
             </div>
             {enhancement === 0 && (
-              <span className="hint">All planned work is currently mandatory Prime conversion. Mark optional work as Enhancement in the plan to separate it here.</span>
+              <span className="hint">All planned work is currently marked as required for Prime. Mark optional work as Enhancement in the plan to show it separately.</span>
             )}
-            <h2 className="subhead">Approval status</h2>
-            <ApprovalTimeline status={state.status} onChange={onStatus} />
+            <h2 className="subhead">Agreement status</h2>
+            <AgreementTimeline status={state.status} onChange={onStatus} />
           </section>
         </div>
 
         <section className="card">
-          <h2>What “redo” means for this game</h2>
+          <h2>Workstreams by label</h2>
           <div className="findings">
             {CLASSES.map((c) => (
               <div key={c} style={{ "--c": `var(--${c})`, "--bg-c": `var(--${c}-bg)` } as CSSProperties}>
@@ -93,7 +103,7 @@ export default function SummaryView({ state, savedAt, onOpenWorkstream, onStatus
         </section>
 
         <section className="card">
-          <h2>Developer confirmation</h2>
+          <h2>Confirmation</h2>
           <div className="checks">
             {CONFIRMATIONS.map((text, i) => (
               <label key={text} htmlFor={`chk-${i}`}>

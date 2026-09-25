@@ -49,7 +49,7 @@ export default function RiskMatrix({ plan, onOpen }: Props) {
           </Fragment>
         ))}
       </div>
-      <span className="hint">Top-right cells need the most attention before approval.</span>
+      <span className="hint">Top-right cells are worth discussing first.</span>
     </section>
   );
 }
