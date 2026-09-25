@@ -60,8 +60,8 @@ describe("POST /api/me/password", () => {
     expect(JSON.stringify((console.error as unknown as { mock: { calls: unknown[] } }).mock.calls)).not.toContain(PASSWORD);
   });
 
-  it("rejects passwords under 12 characters before calling Supabase", async () => {
-    const response = await post({ password: "short-pass1" });
+  it("rejects passwords under 8 characters before calling Supabase", async () => {
+    const response = await post({ password: "seven77" });
 
     expect(response.status).toBe(400);
     expect(updateUserById).not.toHaveBeenCalled();

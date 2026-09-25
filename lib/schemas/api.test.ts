@@ -4,19 +4,21 @@ import { changePasswordSchema, createMemberSchema, newPasswordSchema, resetPassw
 const member = { email: "dev@example.com", name: "Dev", role: "developer" as const };
 
 describe("password schemas", () => {
-  it("rejects temporary passwords under 12 characters", () => {
-    expect(createMemberSchema.safeParse({ ...member, temporaryPassword: "short-pass1" }).success).toBe(false);
-    expect(createMemberSchema.safeParse({ ...member, temporaryPassword: "long-enough-12" }).success).toBe(true);
-    expect(resetPasswordSchema.safeParse({ temporaryPassword: "elevenchars" }).success).toBe(false);
+  it("rejects temporary passwords under 8 characters and accepts 8", () => {
+    expect(createMemberSchema.safeParse({ ...member, temporaryPassword: "seven77" }).success).toBe(false);
+    expect(createMemberSchema.safeParse({ ...member, temporaryPassword: "eight888" }).success).toBe(true);
+    expect(resetPasswordSchema.safeParse({ temporaryPassword: "seven77" }).success).toBe(false);
+    expect(resetPasswordSchema.safeParse({ temporaryPassword: "eight888" }).success).toBe(true);
     expect(resetPasswordSchema.safeParse({}).success).toBe(true);
   });
 
-  it("rejects new passwords under 12 characters or that don't match", () => {
-    expect(changePasswordSchema.safeParse({ password: "elevenchars", confirm: "elevenchars" }).success).toBe(false);
-    expect(changePasswordSchema.safeParse({ password: "twelve-chars", confirm: "twelve-chars!" }).success).toBe(false);
-    expect(changePasswordSchema.safeParse({ password: "twelve-chars", confirm: "twelve-chars" }).success).toBe(true);
-    expect(newPasswordSchema.safeParse({ password: "elevenchars" }).success).toBe(false);
-    expect(newPasswordSchema.safeParse({ password: "twelve-chars" }).success).toBe(true);
+  it("rejects new passwords under 8 characters or that don't match, and accepts 8", () => {
+    expect(changePasswordSchema.safeParse({ password: "seven77", confirm: "seven77" }).success).toBe(false);
+    expect(changePasswordSchema.safeParse({ password: "eight888", confirm: "eight889" }).success).toBe(false);
+    expect(changePasswordSchema.safeParse({ password: "eight888", confirm: "eight888" }).success).toBe(true);
+    expect(newPasswordSchema.safeParse({ password: "seven77" }).success).toBe(false);
+    expect(newPasswordSchema.safeParse({ password: "eight888" }).success).toBe(true);
+    expect(changePasswordSchema.safeParse({ password: "seven77", confirm: "seven77" }).error?.issues[0]?.message).toBe("Use at least 8 characters.");
   });
 
   it("never echoes the password in error messages", () => {

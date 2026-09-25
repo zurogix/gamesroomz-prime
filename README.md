@@ -51,6 +51,8 @@ Copy `.env.example` to `.env.local` for local development, and set the same valu
    temporary password.
 4. Forgotten passwords: product uses **Reset password** on the Team page, which shows a new temporary password once.
    Everyone can change their own password from **Change password** in the user menu.
+   Passwords need at least 8 characters (temporary ones and self-chosen ones alike); **Generate** creates a random
+   10-character password without look-alike characters (0/O, 1/l/I).
    Nobody gets access automatically.
 
 ### Database migrations

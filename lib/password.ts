@@ -1,7 +1,8 @@
 /** Letters and digits without look-alikes (0/O, 1/l/I), so a password can be read out or typed from a screen. */
 export const PASSWORD_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
-export const GENERATED_PASSWORD_LENGTH = 16;
-export const MIN_PASSWORD_LENGTH = 12;
+export const GENERATED_PASSWORD_LENGTH = 10;
+/** Shared by the forms and the API schemas, so client and server always agree. */
+export const MIN_PASSWORD_LENGTH = 8;
 /** Supabase (bcrypt) ignores anything past 72 bytes. */
 export const MAX_PASSWORD_LENGTH = 72;
 
