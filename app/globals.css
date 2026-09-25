@@ -530,6 +530,14 @@ td.n{font:500 13px var(--mono);text-align:right}
 
 /* Discovery form */
 .discovery-intro{margin:0;padding:16px 18px;border:0;border-radius:12px;background:var(--tint);color:var(--tint-ink);font-size:13.5px;line-height:1.6;max-width:none}
+.target-field .seg{align-self:flex-start;flex-wrap:wrap}
+.target-field textarea{min-height:64px}
+.target-link{margin-top:4px}
+.game-line{display:flex;align-items:center;flex-wrap:wrap;gap:8px;font-size:13.5px;color:var(--ink-2)}
+.game-line b{color:var(--ink);font-size:15px}
+.game-line-form{display:flex;align-items:center;flex-wrap:wrap;gap:6px}
+.game-line-form label{font-weight:600}
+.game-line-form input{min-width:200px}
 .targets-summary{padding:14px 18px;border:0;border-radius:12px;background:var(--tint);color:var(--tint-ink);display:flex;flex-direction:column;gap:8px}
 .targets-summary .label,.targets-summary .hint,.targets-summary .btn.quiet{color:var(--tint-ink)}
 .targets-summary-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}

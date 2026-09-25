@@ -9,19 +9,24 @@ export type SharedCodeLevel = "high" | "medium" | "low" | "";
 export type CodebaseDecision = "shared" | "separate" | "undecided" | "";
 export type AssessmentStatus = "draft" | "assessment-complete" | "planning" | "submitted" | "changes-requested" | "agreed";
 
+/** "agree-with-developer" is offered only for the Unity version and Android API level. */
+export type TargetState = "set" | "not-decided" | "agree-with-developer" | "";
+
+/** One text target: the value counts only when the state is "set". The link is used by the P1/P2 layout sketch. */
+export type TargetValue = { state: TargetState; value: string; link?: string };
+
 /** Targets confirmed by the product team; shown to developers above the discovery form. */
 export type PrimeTargets = {
-  unityVersion: string;
-  androidApi: string;
-  resolution: string;
-  layout: string;
-  layoutSketch: string;
-  fpsTarget: string;
-  sdk: string;
-  firstRelease: string;
   codebase: CodebaseDecision;
   modes: string[];
   modesOther: string;
+  firstRelease: TargetValue;
+  unityVersion: TargetValue;
+  androidApi: TargetValue;
+  resolution: TargetValue;
+  layout: TargetValue;
+  fpsTarget: TargetValue;
+  sdk: TargetValue;
 };
 
 export type EngineOptionEstimate = {
@@ -66,15 +71,10 @@ export type Workstream = {
   scopeType: ScopeType;
 };
 
+/** The game name is owned by the games list; the developer / team is edited on the Overview. */
 export type GameInfo = {
   gameName: string;
   developer: string;
-  currentUnity: string;
-  currentAndroidApi: string;
-  currentPlatforms: string;
-  currentMultiplayer: string;
-  targetPlayers: string;
-  assessmentDate: string;
 };
 
 export type AssessmentState = {
@@ -92,7 +92,8 @@ export type AssessmentState = {
 export type SavedDraft = Omit<Partial<AssessmentState>, "gameInfo" | "engineAssessment" | "primeTargets" | "answers" | "status"> & {
   gameInfo?: Partial<GameInfo>;
   engineAssessment?: Partial<MultiplayerEngineAssessment>;
-  primeTargets?: Partial<PrimeTargets>;
+  /** Older drafts hold plain strings for the text targets and a separate layoutSketch. */
+  primeTargets?: Record<string, unknown>;
   answers?: Record<string, Partial<QuestionAnswer>>;
   status?: string;
 };

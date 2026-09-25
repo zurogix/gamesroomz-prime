@@ -16,13 +16,13 @@ const v1Draft = {
 };
 
 describe("local-draft import", () => {
-  it("turns a v2 draft into a valid state", () => {
+  it("turns a v2 draft (older string targets) into a valid state", () => {
     const v2 = { ...initialAssessment(), primeTargets: { ...initialAssessment().primeTargets, fpsTarget: "60" } };
     const state = readImportableDraft(storageWith({ [STORAGE_KEY]: JSON.stringify(v2) }));
 
     expect(state).not.toBeNull();
     expect(assessmentStateSchema.safeParse(state).success).toBe(true);
-    expect(state?.primeTargets.fpsTarget).toBe("60");
+    expect(state?.primeTargets.fpsTarget).toEqual({ state: "set", value: "60" });
   });
 
   it("turns a v1 draft into a valid state via the existing migration", () => {
@@ -41,7 +41,7 @@ describe("local-draft import", () => {
 
   it("keeps product-only fields from the game when a developer imports", () => {
     const current = { ...initialAssessment(), gameInfo: { ...initialAssessment().gameInfo, gameName: "Server name" }, status: "planning" as const };
-    const draft = { ...initialAssessment(), primeTargets: { ...current.primeTargets, fpsTarget: "30" }, status: "agreed" as const };
+    const draft = { ...initialAssessment(), primeTargets: { ...current.primeTargets, fpsTarget: { state: "set" as const, value: "30" } }, status: "agreed" as const };
     const prepared = prepareImport(draft, current, "developer");
 
     expect(prepared.primeTargets).toEqual(current.primeTargets);

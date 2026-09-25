@@ -6,21 +6,13 @@ import { DISCOVERY_QUESTIONS } from "./discovery";
 import { hydrateAnswer } from "./discoveryAnswers";
 import { replaceLegacyDefaults } from "./legacyTemplateDefaults";
 import { migrateClassification } from "./migrate";
+import { hydratePrimeTargets } from "./hydratePrimeTargets";
 import { emptyPrimeTargets } from "./primeTargets";
 
 export { applyEngineEstimate, engineAssessmentIssues, engineOptionTotal, rewriteNeedsEvidence, selectedEngineEstimate } from "./engine";
 
 export const initialAssessment = (): AssessmentState => ({
-  gameInfo: {
-    gameName: "Bubble Shooter PvP",
-    developer: "",
-    currentUnity: "",
-    currentAndroidApi: "",
-    currentPlatforms: "Android / iOS",
-    currentMultiplayer: "Online PvP — one player per mobile device",
-    targetPlayers: "2 players on one Prime device",
-    assessmentDate: new Date().toISOString().slice(0, 10),
-  },
+  gameInfo: { gameName: "Bubble Shooter PvP", developer: "" },
   primeTargets: emptyPrimeTargets(),
   answers: {},
   engineAssessment: emptyEngineAssessment(),
@@ -68,11 +60,14 @@ export function hydrateAssessment(saved: SavedDraft): AssessmentState {
     separatePrime: { ...base.engineAssessment.separatePrime, ...saved.engineAssessment?.separatePrime },
   };
   const plan = base.plan.map((item) => hydrateWorkstream(item, savedPlanById.get(item.id)));
-  const primeTargets = { ...base.primeTargets, ...saved.primeTargets };
   return {
     ...base,
-    gameInfo: { ...base.gameInfo, ...saved.gameInfo },
-    primeTargets: { ...primeTargets, modes: Array.isArray(primeTargets.modes) ? primeTargets.modes : [] },
+    // Only the name and developer / team are kept; older fields are dropped.
+    gameInfo: {
+      gameName: saved.gameInfo?.gameName ?? base.gameInfo.gameName,
+      developer: saved.gameInfo?.developer ?? base.gameInfo.developer,
+    },
+    primeTargets: hydratePrimeTargets(saved.primeTargets),
     answers: hydrateAnswers(saved.answers),
     status: hydrateStatus(saved.status),
     lastSavedAt: saved.lastSavedAt,

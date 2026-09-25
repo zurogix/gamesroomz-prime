@@ -30,26 +30,30 @@ const questionAnswerSchema = z.object({
 const gameInfoSchema = z.object({
   gameName: short,
   developer: short,
-  currentUnity: short,
-  currentAndroidApi: short,
-  currentPlatforms: short,
-  currentMultiplayer: short,
-  targetPlayers: short,
-  assessmentDate: short,
+});
+
+const targetSchema = z.object({
+  state: z.enum(["set", "not-decided", "agree-with-developer", ""]),
+  value: text,
+  link: short.optional(),
+});
+
+/** "To be agreed with developer" is offered only for the Unity version and Android API level. */
+const fixedTargetSchema = targetSchema.refine((t) => t.state !== "agree-with-developer", {
+  message: "This target cannot be left to the developer.",
 });
 
 const primeTargetsSchema = z.object({
-  unityVersion: short,
-  androidApi: short,
-  resolution: short,
-  layout: text,
-  layoutSketch: short,
-  fpsTarget: short,
-  sdk: text,
-  firstRelease: text,
   codebase: z.enum(["shared", "separate", "undecided", ""]),
   modes: z.array(short).max(20),
   modesOther: short,
+  firstRelease: fixedTargetSchema,
+  unityVersion: targetSchema,
+  androidApi: targetSchema,
+  resolution: fixedTargetSchema,
+  layout: fixedTargetSchema,
+  fpsTarget: fixedTargetSchema,
+  sdk: fixedTargetSchema,
 });
 
 const engineOptionSchema = z.object({

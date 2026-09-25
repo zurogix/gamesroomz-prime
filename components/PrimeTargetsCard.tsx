@@ -1,42 +1,29 @@
 import {
   CODEBASE_OPTIONS,
   CODEBASE_QUESTION,
+  FIRST_RELEASE_FIELD,
   MODE_OPTIONS,
   MODES_QUESTION,
   OTHER_MODE,
-  PRIME_TARGET_FIELDS,
+  TECHNICAL_TARGET_FIELDS,
 } from "@/lib/primeTargets";
 import { PrimeTargets } from "@/lib/types";
+import PrimeTargetField from "./targets/PrimeTargetField";
 
 type Props = {
   targets: PrimeTargets;
   onChange: (patch: Partial<PrimeTargets>) => void;
-  /** Developers see the targets but cannot change them. */
-  readOnly?: boolean;
 };
 
-export default function PrimeTargetsCard({ targets, onChange, readOnly = false }: Props) {
+/** The product team's editor for the Prime targets. Developers see PrimeTargetsSummary instead. */
+export default function PrimeTargetsCard({ targets, onChange }: Props) {
   const toggleMode = (mode: string) =>
     onChange({ modes: targets.modes.includes(mode) ? targets.modes.filter((m) => m !== mode) : [...targets.modes, mode] });
 
   return (
     <section className="card">
       <h2>Prime targets — confirmed by the product team</h2>
-      {readOnly && <p className="hint">Set by the product team. Ask them if something here needs to change.</p>}
-      <fieldset className="plain-fieldset" disabled={readOnly}>
-        <div className="form-grid">
-          {PRIME_TARGET_FIELDS.map((f) => (
-            <div className="field" key={f.key}>
-              <label htmlFor={`pt-${f.key}`}>{f.label}</label>
-              <input type="text" id={`pt-${f.key}`} value={targets[f.key]} onChange={(e) => onChange({ [f.key]: e.target.value })} />
-            </div>
-          ))}
-          <div className="field">
-            <label htmlFor="pt-sketch">P1/P2 layout sketch link (optional)</label>
-            <input type="url" id="pt-sketch" placeholder="https://" value={targets.layoutSketch} onChange={(e) => onChange({ layoutSketch: e.target.value })} />
-          </div>
-        </div>
-
+      <div className="plain-fieldset">
         <div className="field">
           <span className="field-title" id="pt-codebase">{CODEBASE_QUESTION}</span>
           <div className="choice-options single" role="group" aria-labelledby="pt-codebase">
@@ -79,7 +66,16 @@ export default function PrimeTargetsCard({ targets, onChange, readOnly = false }
             />
           )}
         </div>
-      </fieldset>
+
+        <PrimeTargetField field={FIRST_RELEASE_FIELD} value={targets.firstRelease} onChange={(firstRelease) => onChange({ firstRelease })} />
+
+        <span className="label">Technical targets</span>
+        <div className="form-grid">
+          {TECHNICAL_TARGET_FIELDS.map((f) => (
+            <PrimeTargetField key={f.key} field={f} value={targets[f.key]} onChange={(value) => onChange({ [f.key]: value })} />
+          ))}
+        </div>
+      </div>
     </section>
   );
 }

@@ -2,8 +2,10 @@ import { planCoverage, totalPlanDays } from "@/lib/assessment";
 import { DISCOVERY_QUESTIONS, DISCOVERY_SECTIONS } from "@/lib/discovery";
 import { answerFor, discoveryCoverage, isAnswered, sectionProgress } from "@/lib/discoveryAnswers";
 import { AssessmentState, GameInfo, PrimeTargets } from "@/lib/types";
+import GameInfoLine from "./GameInfoLine";
 import PageHeader from "./PageHeader";
 import PrimeTargetsCard from "./PrimeTargetsCard";
+import PrimeTargetsSummary from "./PrimeTargetsSummary";
 
 type Props = {
   state: AssessmentState;
@@ -18,13 +20,6 @@ const STEPS = [
   { title: "Classify", text: "Reuse, extend, refactor, rewrite, new or remove?" },
   { title: "Plan", text: "How will Prime support be built?" },
   { title: "Estimate", text: "Person-days and risks" },
-];
-
-const GAME_FIELDS: { key: keyof GameInfo; label: string; placeholder?: string }[] = [
-  { key: "gameName", label: "Game name" },
-  { key: "developer", label: "Developer / team", placeholder: "Name or team" },
-  { key: "currentUnity", label: "Current Unity version", placeholder: "e.g. 2020.3 LTS" },
-  { key: "currentAndroidApi", label: "Current Android API / SDK", placeholder: "If known" },
 ];
 
 export default function OverviewView({ state, onGameInfo, onPrimeTargets, onNavigate, canEditTargets }: Props) {
@@ -45,6 +40,7 @@ export default function OverviewView({ state, onGameInfo, onPrimeTargets, onNavi
     <>
       <PageHeader title="Overview" crumb={`${state.gameInfo.gameName || "Untitled game"} → Gamesroomz Prime`} />
       <div className="content">
+        <GameInfoLine gameInfo={state.gameInfo} onDeveloper={(developer) => onGameInfo("developer", developer)} canEdit />
         {next && nextProgress && (
           <div className="resume">
             <div>
@@ -71,27 +67,11 @@ export default function OverviewView({ state, onGameInfo, onPrimeTargets, onNavi
           </ol>
         </section>
 
-        <PrimeTargetsCard targets={state.primeTargets} onChange={onPrimeTargets} readOnly={!canEditTargets} />
-
-        <section className="card">
-          <span className="label">Game information</span>
-          <div className="form-grid">
-            {GAME_FIELDS.map((f) => (
-              <div className="field" key={f.key}>
-                <label htmlFor={`gi-${f.key}`}>{f.label}</label>
-                <input
-                  type="text"
-                  id={`gi-${f.key}`}
-                  value={state.gameInfo[f.key]}
-                  placeholder={f.placeholder}
-                  readOnly={f.key === "gameName"}
-                  title={f.key === "gameName" ? "Rename the game from the games list" : undefined}
-                  onChange={(e) => onGameInfo(f.key, e.target.value)}
-                />
-              </div>
-            ))}
-          </div>
-        </section>
+        {canEditTargets ? (
+          <PrimeTargetsCard targets={state.primeTargets} onChange={onPrimeTargets} />
+        ) : (
+          <PrimeTargetsSummary targets={state.primeTargets} />
+        )}
       </div>
     </>
   );

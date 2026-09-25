@@ -1,30 +1,55 @@
-import { CodebaseDecision, PrimeTargets } from "./types";
+import { CodebaseDecision, PrimeTargets, TargetState, TargetValue } from "./types";
+
+export type TextTargetKey = "firstRelease" | "unityVersion" | "androidApi" | "resolution" | "layout" | "fpsTarget" | "sdk";
+
+export type TextTargetField = {
+  key: TextTargetKey;
+  label: string;
+  placeholder?: string;
+  /** Offers "To be agreed with developer". */
+  agreeable?: boolean;
+};
+
+/** In display order: first-release scope, then the technical targets. */
+export const FIRST_RELEASE_FIELD: TextTargetField = { key: "firstRelease", label: "Other first-release requirements" };
+
+export const TECHNICAL_TARGET_FIELDS: TextTargetField[] = [
+  { key: "unityVersion", label: "Target Unity version", placeholder: "Unity 2022.3 LTS", agreeable: true },
+  { key: "androidApi", label: "Android API level", placeholder: "API 33", agreeable: true },
+  { key: "resolution", label: "Screen resolution", placeholder: "1920×1080" },
+  { key: "layout", label: "P1/P2 layout", placeholder: "Two vertical playfields, P2 rotated 180°, shared centre strip" },
+  { key: "fpsTarget", label: "FPS target", placeholder: "60" },
+  { key: "sdk", label: "Gamesroomz SDK summary or link", placeholder: "Link or short summary" },
+];
+
+export const TEXT_TARGET_FIELDS: TextTargetField[] = [FIRST_RELEASE_FIELD, ...TECHNICAL_TARGET_FIELDS];
+
+const AGREEABLE_KEYS = new Set(TEXT_TARGET_FIELDS.filter((f) => f.agreeable).map((f) => f.key));
+
+export const isAgreeable = (key: string) => AGREEABLE_KEYS.has(key as TextTargetKey);
+
+export const TARGET_STATE_OPTIONS: { value: Exclude<TargetState, "">; label: string; agreeableOnly?: boolean }[] = [
+  { value: "set", label: "Set" },
+  { value: "not-decided", label: "Not decided yet" },
+  { value: "agree-with-developer", label: "To be agreed with developer", agreeableOnly: true },
+];
+
+export const targetStateOptions = (field: TextTargetField) => TARGET_STATE_OPTIONS.filter((o) => !o.agreeableOnly || field.agreeable);
+
+export const emptyTarget = (): TargetValue => ({ state: "", value: "" });
 
 export const emptyPrimeTargets = (): PrimeTargets => ({
-  unityVersion: "",
-  androidApi: "",
-  resolution: "",
-  layout: "",
-  layoutSketch: "",
-  fpsTarget: "",
-  sdk: "",
-  firstRelease: "",
   codebase: "",
   modes: [],
   modesOther: "",
+  firstRelease: emptyTarget(),
+  unityVersion: emptyTarget(),
+  androidApi: emptyTarget(),
+  resolution: emptyTarget(),
+  layout: { ...emptyTarget(), link: "" },
+  fpsTarget: emptyTarget(),
+  sdk: emptyTarget(),
 });
-
-type TextKey = "unityVersion" | "androidApi" | "resolution" | "layout" | "fpsTarget" | "sdk" | "firstRelease";
-
-export const PRIME_TARGET_FIELDS: { key: TextKey; label: string }[] = [
-  { key: "unityVersion", label: "Target Unity version" },
-  { key: "androidApi", label: "Android API level" },
-  { key: "resolution", label: "Screen resolution" },
-  { key: "layout", label: "P1/P2 layout" },
-  { key: "fpsTarget", label: "FPS target" },
-  { key: "sdk", label: "Gamesroomz SDK summary or link" },
-  { key: "firstRelease", label: "First release must include" },
-];
 
 export const CODEBASE_QUESTION = "Must the existing mobile game continue on the same maintained codebase?";
 
@@ -47,6 +72,17 @@ export const MODE_OPTIONS = [
 
 export function isLink(value: string) {
   return /^https?:\/\/\S+$/i.test(value.trim());
+}
+
+/**
+ * What a reader sees for a text target: the value when set, a plain label when undecided
+ * or left for the developer, and null when nothing has been recorded.
+ */
+export function describeTarget(target: TargetValue): string | null {
+  if (target.state === "set") return target.value.trim() || null;
+  if (target.state === "not-decided") return "Not decided yet";
+  if (target.state === "agree-with-developer") return "To be agreed with developer";
+  return null;
 }
 
 /** Human-readable modes, including the "Other" text. */

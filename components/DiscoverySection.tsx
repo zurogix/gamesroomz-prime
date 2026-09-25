@@ -42,7 +42,7 @@ export default function DiscoverySection({ state, sectionTitle, focusId, onAnswe
       <div className="content">
         {index === 0 && <p className="discovery-intro">{DISCOVERY_INTRO}</p>}
         <SectionTipsBox section={section} />
-        <PrimeTargetsSummary targets={state.primeTargets} onEdit={() => onNavigate(OVERVIEW)} />
+        <PrimeTargetsSummary targets={state.primeTargets} action={{ label: "View on Overview", onClick: () => onNavigate(OVERVIEW) }} />
         <div className="dq-list">
           {questions.map((q) => (
             <DiscoveryQuestionCard

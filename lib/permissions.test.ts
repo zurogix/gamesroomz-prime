@@ -5,7 +5,7 @@ import { AssessmentState } from "./types";
 import { CONFLICT_MESSAGE, isVersionConflict } from "./versioning";
 
 const base = (): AssessmentState => ({ ...initialAssessment(), status: "planning" });
-const withTargets = (s: AssessmentState): AssessmentState => ({ ...s, primeTargets: { ...s.primeTargets, fpsTarget: "60" } });
+const withTargets = (s: AssessmentState): AssessmentState => ({ ...s, primeTargets: { ...s.primeTargets, fpsTarget: { state: "set", value: "60" } } });
 
 describe("permissions", () => {
   it("blocks developers from changing the Prime targets", () => {

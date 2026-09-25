@@ -14,8 +14,11 @@ import {
   CODEBASE_QUESTION,
   describeCodebase,
   describeModes,
+  describeTarget,
+  FIRST_RELEASE_FIELD,
   MODES_QUESTION,
-  PRIME_TARGET_FIELDS,
+  TECHNICAL_TARGET_FIELDS,
+  TextTargetField,
 } from "./primeTargets";
 import { AssessmentState } from "./types";
 
@@ -72,16 +75,19 @@ function questionBlock(q: DiscoveryQuestion, a: QuestionAnswer): string[] {
   return [`### ${q.id} · ${q.prompt}`, ...(q.tags.length ? [`Tags: ${q.tags.join(", ")}`] : []), ...body, ...detailLines(q, a), ...fileBlocks(a), ""];
 }
 
+function targetLine(state: AssessmentState, field: TextTargetField): string {
+  const target = state.primeTargets[field.key];
+  const link = target.state === "set" ? target.link?.trim() : "";
+  return `- ${field.label}: ${describeTarget(target) ?? EMPTY}${link ? ` (sketch: ${link})` : ""}`;
+}
+
 function targetLines(state: AssessmentState): string[] {
   const t = state.primeTargets;
-  const fields = PRIME_TARGET_FIELDS.map((f) => {
-    const sketch = f.key === "layout" && t.layoutSketch.trim() ? ` (sketch: ${t.layoutSketch.trim()})` : "";
-    return `- ${f.label}: ${t[f.key].trim() || EMPTY}${sketch}`;
-  });
   return [
-    ...fields,
     `- ${CODEBASE_QUESTION} ${describeCodebase(t.codebase) || EMPTY}`,
     `- ${MODES_QUESTION} ${describeModes(t).join("; ") || EMPTY}`,
+    targetLine(state, FIRST_RELEASE_FIELD),
+    ...TECHNICAL_TARGET_FIELDS.map((f) => targetLine(state, f)),
   ];
 }
 
@@ -110,8 +116,6 @@ export function buildDiscoveryMarkdown(state: AssessmentState, exportedAt = new 
     "## Game information",
     `- Game name: ${g.gameName || EMPTY}`,
     `- Developer / team: ${g.developer || EMPTY}`,
-    `- Current Unity version: ${g.currentUnity || EMPTY}`,
-    `- Current Android API / SDK: ${g.currentAndroidApi || EMPTY}`,
     "",
     "## Prime targets",
     ...targetLines(state),
