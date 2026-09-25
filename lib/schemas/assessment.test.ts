@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { initialAssessment } from "@/lib/assessment";
+import { hydrateAssessment, initialAssessment } from "@/lib/assessment";
 import { saveAssessmentSchema } from "./api";
 import { assessmentStateSchema } from "./assessment";
 
@@ -24,6 +24,15 @@ describe("assessment state schema", () => {
     };
 
     expect(assessmentStateSchema.safeParse(state).success).toBe(true);
+  });
+
+  it("drops Prime targets from older saved states", () => {
+    const saved = { ...initialAssessment(), primeTargets: { unityVersion: "2022.3", layoutSketch: "https://x.test" } };
+    const parsed = assessmentStateSchema.safeParse(saved);
+
+    expect(parsed.success).toBe(true);
+    expect(parsed.data).not.toHaveProperty("primeTargets");
+    expect(hydrateAssessment(saved)).not.toHaveProperty("primeTargets");
   });
 
   it("rejects bad input", () => {

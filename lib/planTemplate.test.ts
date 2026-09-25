@@ -36,7 +36,7 @@ describe("plan template", () => {
       expect(w.dependencies).not.toBe("");
     });
     expect(byId(planTemplate, "prime-ui").primeRequirement).toBe(
-      "Tabletop layout as defined in Prime targets; opposite player UI may require 180° orientation."
+      "Tabletop layout agreed with the product team; opposite player UI may require 180° orientation."
     );
   });
 });

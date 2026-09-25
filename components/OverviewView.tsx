@@ -2,26 +2,22 @@ import { DISCOVERY_QUESTIONS, DISCOVERY_SECTIONS } from "@/lib/discovery";
 import { answerFor, isAnswered, sectionProgress } from "@/lib/discoveryAnswers";
 import { Role } from "@/lib/permissions";
 import { Stage } from "@/lib/stages";
-import { AssessmentState, GameInfo, PrimeTargets } from "@/lib/types";
+import { AssessmentState, GameInfo } from "@/lib/types";
 import GameInfoLine from "./GameInfoLine";
 import PageHeader from "./PageHeader";
-import PrimeTargetsCard from "./PrimeTargetsCard";
-import PrimeTargetsSummary from "./PrimeTargetsSummary";
 import NextStepCard from "./stages/NextStepCard";
 
 type Props = {
   state: AssessmentState;
   role: Role;
   onGameInfo: (key: keyof GameInfo, value: string) => void;
-  onPrimeTargets: (patch: Partial<PrimeTargets>) => void;
   onNavigate: (view: string) => void;
   onOpenStage: (stage: Stage) => void;
-  canEditTargets: boolean;
   canEditTeam: boolean;
   canEditAnswers: boolean;
 };
 
-export default function OverviewView({ state, role, onGameInfo, onPrimeTargets, onNavigate, onOpenStage, canEditTargets, canEditTeam, canEditAnswers }: Props) {
+export default function OverviewView({ state, role, onGameInfo, onNavigate, onOpenStage, canEditTeam, canEditAnswers }: Props) {
   const next = DISCOVERY_SECTIONS.find((s) => {
     const { done, total } = sectionProgress(state.answers, s.id);
     return done < total;
@@ -50,17 +46,10 @@ export default function OverviewView({ state, role, onGameInfo, onPrimeTargets, 
         <section className="card">
           <h2>Plan the Prime version together</h2>
           <p className="lead">
-            Developers describe how the current game is built, and the product team records the Prime targets. The
-            product team then publishes findings and options, and together we agree a conversion plan with its effort
-            and risks.
+            Developers describe how the current game is built. The product team then publishes findings and options,
+            and together we agree a conversion plan with its effort and risks.
           </p>
         </section>
-
-        {canEditTargets ? (
-          <PrimeTargetsCard targets={state.primeTargets} onChange={onPrimeTargets} />
-        ) : (
-          <PrimeTargetsSummary targets={state.primeTargets} />
-        )}
       </div>
     </>
   );

@@ -81,7 +81,7 @@ const planData: Omit<Workstream, "category">[] = [
   {
     id:"prime-ui", title:"Prime 16:9 Tabletop UI",
     currentImplementation:"",
-    primeRequirement:"Tabletop layout as defined in Prime targets; opposite player UI may require 180° orientation.",
+    primeRequirement:"Tabletop layout agreed with the product team; opposite player UI may require 180° orientation.",
     classification:"", whyChange:"", proposedImplementation:"",
     reusedComponents:"",
     changedComponents:"",

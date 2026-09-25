@@ -102,6 +102,7 @@ export const LEGACY_TEMPLATE_DEFAULTS: Record<string, Partial<Record<LegacyField
     ],
     primeRequirement: [
       "16:9 tabletop layout with two vertical P1/P2 playfields; opposite player UI may require 180° orientation.",
+      "Tabletop layout as defined in Prime targets; opposite player UI may require 180° orientation.",
     ],
   },
   "networking": {

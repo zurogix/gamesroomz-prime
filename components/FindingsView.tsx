@@ -17,7 +17,7 @@ type Props = {
 export default function FindingsView({ engine, isProduct, canEditEngine, onEngineChange, onEngineOptionChange, stageActions }: Props) {
   return (
     <>
-      <PageHeader title="Findings & Options" crumb={<>Stage 2 of 4 <span>·</span> Product publishes, developer responds</>} actions={stageActions} />
+      <PageHeader title="Findings & Options" crumb={<>Step 2 <span>·</span> Product publishes, developer responds</>} actions={stageActions} />
       <div className="content">
         <section className="card">
           <h2>Findings</h2>

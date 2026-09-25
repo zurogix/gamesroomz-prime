@@ -10,7 +10,6 @@ import { AssessmentState } from "@/lib/types";
 import DiscoveryQuestionCard from "./DiscoveryQuestionCard";
 import ExportMenu from "./ExportMenu";
 import PageHeader from "./PageHeader";
-import PrimeTargetsSummary from "./PrimeTargetsSummary";
 import SectionTipsBox from "./SectionTipsBox";
 import WhatHappensNext from "./stages/WhatHappensNext";
 
@@ -48,7 +47,6 @@ export default function DiscoverySection({ state, sectionTitle, focusId, onAnswe
         {showWhatHappensNext && <WhatHappensNext />}
         {index === 0 && <p className="discovery-intro">{DISCOVERY_INTRO}</p>}
         <SectionTipsBox section={section} />
-        <PrimeTargetsSummary targets={state.primeTargets} action={{ label: "View on Overview", onClick: () => onNavigate(OVERVIEW) }} />
         <fieldset className="bare-fieldset dq-list" disabled={!canEditAnswers}>
           {questions.map((q) => (
             <DiscoveryQuestionCard

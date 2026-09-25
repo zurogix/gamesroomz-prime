@@ -1,13 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { initialAssessment } from "./assessment";
 import { ENGINE_WORKSTREAM_ID } from "./engine";
-import { allowedTransitions, assessmentChangeError, canEditPrimeTargets, editableAreas, SUBMIT_PLAN_NEEDS_CHECKS } from "./permissions";
+import { allowedTransitions, assessmentChangeError, editableAreas, SUBMIT_PLAN_NEEDS_CHECKS } from "./permissions";
 import { STATUSES } from "./stages";
 import { AssessmentState, AssessmentStatus } from "./types";
 import { CONFLICT_MESSAGE, isVersionConflict } from "./versioning";
 
 const at = (status: AssessmentStatus): AssessmentState => ({ ...initialAssessment(), status });
-const withTargets = (s: AssessmentState): AssessmentState => ({ ...s, primeTargets: { ...s.primeTargets, fpsTarget: { state: "set", value: "60" } } });
 const withAnswer = (s: AssessmentState): AssessmentState => ({ ...s, answers: { ...s.answers, A1: { ...initialAnswer(), text: "2021.3" } } });
 const withPlanEdit = (s: AssessmentState): AssessmentState => ({ ...s, plan: s.plan.map((w, i) => (i === 0 ? { ...w, whyChange: "Old Unity" } : w)) });
 const withEngineDays = (s: AssessmentState): AssessmentState => {
@@ -48,12 +47,7 @@ describe("editableAreas", () => {
 
   it.each(STATUSES.map((s) => s.value))("in %s", (status) => {
     expect([...editableAreas("developer", status)].sort()).toEqual([...developer[status]].sort());
-    expect([...editableAreas("product", status)].sort()).toEqual(["answers", "checks", "developerTeam", "engine", "plan", "primeTargets"]);
-  });
-
-  it("never lets developers change the Prime targets", () => {
-    expect(canEditPrimeTargets("developer")).toBe(false);
-    STATUSES.forEach(({ value }) => expect(editableAreas("developer", value)).not.toContain("primeTargets"));
+    expect([...editableAreas("product", status)].sort()).toEqual(["answers", "checks", "developerTeam", "engine", "plan"]);
   });
 });
 
@@ -98,21 +92,17 @@ describe("assessmentChangeError", () => {
     expect(assessmentChangeError("developer", previous, { ...allChecked(previous), status: "plan-submitted" })).toBeNull();
   });
 
-  it("blocks developers from changing the Prime targets", () => {
-    expect(assessmentChangeError("developer", at("discovery"), withTargets(at("discovery")))).toBe("Only the product team can change the Prime targets.");
-  });
-
   it("allows product to change everything", () => {
     const previous = at("agreed");
 
-    expect(assessmentChangeError("product", previous, withPlanEdit(withAnswer(withTargets(previous))))).toBeNull();
+    expect(assessmentChangeError("product", previous, withPlanEdit(withAnswer(previous)))).toBeNull();
   });
 
-  it("treats reordered but equal targets as unchanged", () => {
+  it("treats a reordered but equal engine comparison as unchanged", () => {
     const previous = at("discovery");
-    const reordered = { ...previous, primeTargets: Object.fromEntries(Object.entries(previous.primeTargets).reverse()) as AssessmentState["primeTargets"] };
+    const engineAssessment = Object.fromEntries(Object.entries(previous.engineAssessment).reverse()) as AssessmentState["engineAssessment"];
 
-    expect(assessmentChangeError("developer", previous, reordered)).toBeNull();
+    expect(assessmentChangeError("developer", previous, { ...previous, engineAssessment })).toBeNull();
   });
 });
 

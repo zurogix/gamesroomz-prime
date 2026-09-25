@@ -4,7 +4,7 @@ import type { AssessmentStatus } from "./types";
 
 const BY_ROLE: Partial<Record<AssessmentStatus, Record<Role, string>>> = {
   discovery: {
-    product: "Fill in the Prime targets, then invite the developer from Team.",
+    product: "Invite the developer from Team, then share the portal link.",
     developer: "Start with section A. Allow approximately 1.5–2 hours; 'Not sure' is fine.",
   },
   "discovery-submitted": {

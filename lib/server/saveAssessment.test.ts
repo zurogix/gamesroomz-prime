@@ -10,6 +10,7 @@ vi.mock("./db", () => ({ db: { assessment: { findFirst }, $transaction: transact
 
 const { saveAssessment } = await import("./saveAssessment");
 
+const product: SessionProfile = { id: "prod-1", email: "pm@example.com", name: "PM", role: "product" };
 const developer: SessionProfile = { id: "dev-1", email: "dev@example.com", name: "Dev", role: "developer" };
 
 /** A stored row whose status column says one thing while its JSON still holds an older status. */
@@ -66,5 +67,29 @@ describe("saveAssessment", () => {
 
     expect(outcome.kind).toBe("saved");
     expect(transaction).toHaveBeenCalledOnce();
+  });
+
+  it("clears the confirmations when product requests changes, whatever the client sent", async () => {
+    const ticked = { ...initialAssessment(), checks: initialAssessment().checks.map(() => true) };
+    findFirst.mockResolvedValue(storedRow(DbStatus.plan_submitted, ticked));
+    const update = vi.fn().mockResolvedValue({ count: 1 });
+    const tx = {
+      assessment: { updateMany: update, findUniqueOrThrow: vi.fn().mockResolvedValue({ version: 4, updatedAt: new Date() }) },
+      assessmentSnapshot: { create: vi.fn() },
+    };
+    transaction.mockImplementation((run: (t: typeof tx) => unknown) => run(tx));
+
+    await saveAssessment(product, "g-1", { ...ticked, status: "plan" }, 3);
+
+    expect(update.mock.calls[0][0].data.state.checks.every((c: boolean) => !c)).toBe(true);
+  });
+
+  it("loads a stored state that still holds Prime targets", async () => {
+    findFirst.mockResolvedValue({ ...storedRow(DbStatus.discovery), state: { ...initialAssessment(), primeTargets: { fpsTarget: "60" } } });
+    transaction.mockResolvedValue({ kind: "saved", version: 4, updatedAt: "2026-09-25T00:00:00.000Z" });
+
+    const outcome = await saveAssessment(developer, "g-1", withAnswer(initialAssessment()), 3);
+
+    expect(outcome.kind).toBe("saved");
   });
 });

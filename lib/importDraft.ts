@@ -25,7 +25,6 @@ export function prepareImport(draft: AssessmentState, current: AssessmentState, 
   return {
     ...current,
     gameInfo: { gameName: current.gameInfo.gameName, developer: pick("developerTeam", draft.gameInfo.developer, current.gameInfo.developer) },
-    primeTargets: pick("primeTargets", draft.primeTargets, current.primeTargets),
     answers: pick("answers", draft.answers, current.answers),
     engineAssessment,
     plan: applyEngineEstimate(pick("plan", draft.plan, current.plan), engineAssessment),

@@ -37,7 +37,7 @@ export const NOT_SURE_TIP = "'Not sure' is fine — note what needs checking.";
 
 export const DISCOVERY_QUESTIONS: DiscoveryQuestion[] = [
   {
-    id: "A1", title: "Unity version", why: "Shows how much upgrade work may be needed to reach the Prime target version. The two files give exact versions, so no extra detail is needed.",
+    id: "A1", title: "Unity version", why: "Shows how much upgrade work may be needed; the target version will be agreed with you later. The two files give exact versions, so no extra detail is needed.",
     section: "A", type: "single", tags: ["Risk"], evidence: "none", projectFiles: true,
     prompt: "Unity version?",
     options: choices(["2019 or older", "2020", "2021", "2022", "Unity 6"]),

@@ -5,9 +5,9 @@ import type { AssessmentState, AssessmentStatus, Workstream } from "./types";
 export type Role = "product" | "developer";
 
 /** The parts of an assessment that are edited separately. */
-export type Area = "primeTargets" | "developerTeam" | "answers" | "engine" | "plan" | "checks";
+export type Area = "developerTeam" | "answers" | "engine" | "plan" | "checks";
 
-export const ALL_AREAS: Area[] = ["primeTargets", "developerTeam", "answers", "engine", "plan", "checks"];
+export const ALL_AREAS: Area[] = ["developerTeam", "answers", "engine", "plan", "checks"];
 
 export const isProduct = (role: Role) => role === "product";
 
@@ -45,10 +45,6 @@ export function editableAreas(role: Role, status: AssessmentStatus): Area[] {
 
 export const canEdit = (role: Role, status: AssessmentStatus, area: Area) => editableAreas(role, status).includes(area);
 
-export function canEditPrimeTargets(role: Role) {
-  return isProduct(role);
-}
-
 /** Creating, renaming and removing games, and managing the team, are product-only. */
 export function canManageGames(role: Role) {
   return isProduct(role);
@@ -74,7 +70,6 @@ function planWithoutDerived(plan: Workstream[]) {
 }
 
 const AREA_VALUE: Record<Area, (s: AssessmentState) => unknown> = {
-  primeTargets: (s) => s.primeTargets,
   developerTeam: (s) => s.gameInfo.developer,
   answers: (s) => s.answers,
   engine: (s) => s.engineAssessment,
@@ -88,7 +83,6 @@ export function changedAreas(previous: AssessmentState, next: AssessmentState): 
 }
 
 const LOCKED_MESSAGE: Record<Area, string> = {
-  primeTargets: "Only the product team can change the Prime targets.",
   developerTeam: "The developer / team can only be changed while discovery is in progress.",
   answers: "Discovery answers can only be changed while discovery is in progress.",
   engine: "The engine comparison can only be changed while findings or the plan are open.",

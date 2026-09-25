@@ -10,16 +10,6 @@ import {
   OTHER_ID,
 } from "./discoveryAnswers";
 import { ChoiceAnswer, ChoiceOption, DiscoveryQuestion, FollowUp, FollowUpAnswer, QuestionAnswer } from "./discoveryTypes";
-import {
-  CODEBASE_QUESTION,
-  describeCodebase,
-  describeModes,
-  describeTarget,
-  FIRST_RELEASE_FIELD,
-  MODES_QUESTION,
-  TECHNICAL_TARGET_FIELDS,
-  TextTargetField,
-} from "./primeTargets";
 import { AssessmentState } from "./types";
 
 const EMPTY = "—";
@@ -75,22 +65,6 @@ function questionBlock(q: DiscoveryQuestion, a: QuestionAnswer): string[] {
   return [`### ${q.id} · ${q.prompt}`, ...(q.tags.length ? [`Tags: ${q.tags.join(", ")}`] : []), ...body, ...detailLines(q, a), ...fileBlocks(a), ""];
 }
 
-function targetLine(state: AssessmentState, field: TextTargetField): string {
-  const target = state.primeTargets[field.key];
-  const link = target.state === "set" ? target.link?.trim() : "";
-  return `- ${field.label}: ${describeTarget(target) ?? EMPTY}${link ? ` (sketch: ${link})` : ""}`;
-}
-
-function targetLines(state: AssessmentState): string[] {
-  const t = state.primeTargets;
-  return [
-    `- ${CODEBASE_QUESTION} ${describeCodebase(t.codebase) || EMPTY}`,
-    `- ${MODES_QUESTION} ${describeModes(t).join("; ") || EMPTY}`,
-    targetLine(state, FIRST_RELEASE_FIELD),
-    ...TECHNICAL_TARGET_FIELDS.map((f) => targetLine(state, f)),
-  ];
-}
-
 function openItems(state: AssessmentState): string[] {
   return DISCOVERY_QUESTIONS.flatMap((q) => {
     const a = answerFor(state.answers, q.id);
@@ -116,9 +90,6 @@ export function buildDiscoveryMarkdown(state: AssessmentState, exportedAt = new 
     "## Game information",
     `- Game name: ${g.gameName || EMPTY}`,
     `- Developer / team: ${g.developer || EMPTY}`,
-    "",
-    "## Prime targets",
-    ...targetLines(state),
     "",
     ...sections,
     "## Unanswered / Not sure",

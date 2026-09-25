@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { hydrateAssessment } from "@/lib/assessment";
 import { assessmentChangeError } from "@/lib/permissions";
+import { withTransitionEffects } from "@/lib/stageActions";
 import type { AssessmentState } from "@/lib/types";
 import { isVersionConflict } from "@/lib/versioning";
 import type { SessionProfile } from "./auth";
@@ -32,7 +33,10 @@ export async function saveAssessment(profile: SessionProfile, gameId: string, st
   const forbidden = assessmentChangeError(profile.role, previous, state);
   if (forbidden) return { kind: "forbidden", message: forbidden };
 
-  const next = { ...state, gameInfo: { ...state.gameInfo, gameName: row.game.name } };
+  // Transition side effects (e.g. clearing confirmations on "Request changes") are applied here too,
+  // so they hold whichever client made the change.
+  const effective = withTransitionEffects(previous.status, state);
+  const next = { ...effective, gameInfo: { ...effective.gameInfo, gameName: row.game.name } };
   return db.$transaction(async (tx): Promise<SaveOutcome> => {
     const updated = await tx.assessment.updateMany({
       where: { id: row.id, version },

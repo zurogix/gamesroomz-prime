@@ -3,8 +3,9 @@
 import { useCallback, useState } from "react";
 import { applyEngineEstimate } from "@/lib/assessment";
 import { answerFor } from "@/lib/discoveryAnswers";
+import { applyStatusChange } from "@/lib/stageActions";
 import { QuestionAnswer } from "@/lib/discoveryTypes";
-import { AssessmentState, EngineOptionEstimate, GameInfo, MultiplayerEngineAssessment, PrimeTargets, Workstream } from "@/lib/types";
+import { AssessmentState, EngineOptionEstimate, GameInfo, MultiplayerEngineAssessment, Workstream } from "@/lib/types";
 
 function withEngine(s: AssessmentState, engineAssessment: MultiplayerEngineAssessment): AssessmentState {
   return { ...s, engineAssessment, plan: applyEngineEstimate(s.plan, engineAssessment) };
@@ -16,10 +17,6 @@ export function useAssessmentEditor(initial: AssessmentState) {
 
   const updateGameInfo = useCallback((key: keyof GameInfo, value: string) => {
     setState((s) => ({ ...s, gameInfo: { ...s.gameInfo, [key]: value } }));
-  }, []);
-
-  const updatePrimeTargets = useCallback((patch: Partial<PrimeTargets>) => {
-    setState((s) => ({ ...s, primeTargets: { ...s.primeTargets, ...patch } }));
   }, []);
 
   const updateAnswer = useCallback((id: string, update: (answer: QuestionAnswer) => QuestionAnswer) => {
@@ -39,7 +36,7 @@ export function useAssessmentEditor(initial: AssessmentState) {
   }, []);
 
   const setStatus = useCallback((status: AssessmentState["status"]) => {
-    setState((s) => ({ ...s, status }));
+    setState((s) => applyStatusChange(s, status));
   }, []);
 
   const toggleCheck = useCallback((index: number) => {
@@ -49,7 +46,6 @@ export function useAssessmentEditor(initial: AssessmentState) {
   return {
     state,
     updateGameInfo,
-    updatePrimeTargets,
     updateAnswer,
     updateEngineAssessment,
     updateEngineOption,

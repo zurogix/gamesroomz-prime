@@ -74,7 +74,7 @@ Each game has one assessment, stored as JSON in Postgres with an optimistic-lock
 first, the portal stops autosaving and asks you to reload instead of overwriting. Every status change saves a
 version that can be exported as Markdown from the Management Summary. Deletes are soft (`deletedAt`).
 
-Roles: **product** can change everything at any stage, including the Prime targets. **Developers** can edit
+Roles: **product** can change everything at any stage. **Developers** can edit
 discovery answers and the developer / team only while discovery is in progress, the engine comparison while findings
 or the plan are open, and the plan and its confirmations only while the plan is in progress. The save API rejects
 anything else with 403.
@@ -83,9 +83,9 @@ A draft saved in the browser by the earlier, local-only version can be imported 
 
 ## Conversion workflow
 
-Four stages, shown in a stepper at the top of each game:
+Four stages, shown as a progress line at the top of each game ("Step 1: Discovery"):
 
-1. **Discovery (A–I)** — the product team records the Prime targets; the developer answers the discovery form and
+1. **Discovery (A–I)** — the product team invites the developer; the developer answers the discovery form and
    submits it (Discovery in progress → Discovery submitted — under review). Product then publishes findings or
    reopens discovery for follow-up questions.
 2. **Findings & options** — product publishes findings; the developer responds, including the Multiplayer Engine 2.0
@@ -95,5 +95,5 @@ Four stages, shown in a stepper at the top of each game:
 4. **Summary** — the Management Summary, open to developers once the plan is agreed (→ Plan agreed). Product can
    reopen the plan.
 
-Developers see a stage once the workflow reaches it; the product team can open every stage at any time (marked
-"Preview" before it is reached).
+Only stages the workflow has reached are shown; later stages are hidden completely. The product team can switch on
+"Preview upcoming stages" in the sidebar footer (remembered per browser) to see later stages, marked "Preview".

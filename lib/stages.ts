@@ -31,35 +31,17 @@ export type Stage = {
   number: number;
   title: string;
   who: string;
-  /** The first status in which developers can see the stage. */
+  /** The first status in which the stage is open. */
   opensAt: AssessmentStatus;
-  /** Shown to developers instead of the content while the stage is locked. */
-  lockedMessage: string;
-  /** The view the stepper opens. */
+  /** The view the progress line opens. */
   view: string;
 };
 
 export const STAGES: Stage[] = [
-  { id: "discovery", number: 1, title: "Discovery (A–I)", who: "Developer", opensAt: "discovery", lockedMessage: "", view: DISCOVERY_SECTIONS[0].title },
-  {
-    id: "findings",
-    number: 2,
-    title: "Findings & options",
-    who: "Product publishes · developer responds",
-    opensAt: "findings",
-    lockedMessage: "Opens after the product team has reviewed your discovery answers. You'll see findings and possible approaches here to comment on.",
-    view: FINDINGS,
-  },
-  {
-    id: "plan",
-    number: 3,
-    title: "Conversion plan",
-    who: "Pre-filled · developer confirms",
-    opensAt: "plan",
-    lockedMessage: "Opens after the findings and options are agreed. It will be pre-filled with suggested workstreams for you to confirm or edit.",
-    view: PLAN,
-  },
-  { id: "summary", number: 4, title: "Summary", who: "Everyone reads", opensAt: "agreed", lockedMessage: "Opens once the plan is agreed.", view: SUMMARY },
+  { id: "discovery", number: 1, title: "Discovery", who: "Developer", opensAt: "discovery", view: DISCOVERY_SECTIONS[0].title },
+  { id: "findings", number: 2, title: "Findings & options", who: "Product publishes · developer responds", opensAt: "findings", view: FINDINGS },
+  { id: "plan", number: 3, title: "Conversion plan", who: "Pre-filled · developer confirms", opensAt: "plan", view: PLAN },
+  { id: "summary", number: 4, title: "Summary", who: "Everyone reads", opensAt: "agreed", view: SUMMARY },
 ];
 
 export const stageById = (id: StageId) => STAGES.find((s) => s.id === id)!;
@@ -85,19 +67,34 @@ export function stageForView(view: string): Stage | null {
 /** True once the workflow has reached the stage. */
 export const stageReached = (stage: Stage, status: AssessmentStatus) => statusIndex(status) >= statusIndex(stage.opensAt);
 
-/** Product can open every stage at any time; developers only stages that have been reached. */
-export const stageVisible = (role: Role, stage: Stage, status: AssessmentStatus) => role === "product" || stageReached(stage, status);
+/**
+ * Whether a stage is shown at all. Stages the workflow has not reached are hidden, except for
+ * product with "Preview upcoming stages" switched on.
+ */
+export const stageOpen = (role: Role, stage: Stage, status: AssessmentStatus, previewUpcoming = false) =>
+  stageReached(stage, status) || (role === "product" && previewUpcoming);
 
-/** Product looking at a stage the workflow has not reached yet. */
-export const isPreview = (role: Role, stage: Stage, status: AssessmentStatus) => role === "product" && !stageReached(stage, status);
+/** The stages to show in navigation, in order. Developers only ever get stages that are open. */
+export const navigableStages = (role: Role, status: AssessmentStatus, previewUpcoming = false) =>
+  STAGES.filter((stage) => stageOpen(role, stage, status, previewUpcoming));
 
-export type StageProgress = "done" | "current" | "locked";
+/** An upcoming stage product has chosen to preview. */
+export const isPreview = (role: Role, stage: Stage, status: AssessmentStatus, previewUpcoming = false) =>
+  !stageReached(stage, status) && stageOpen(role, stage, status, previewUpcoming);
+
+/** Whether a view may be shown; views outside any stage (the Overview) always may. */
+export function viewOpen(view: string, role: Role, status: AssessmentStatus, previewUpcoming = false) {
+  const stage = stageForView(view);
+  return stage === null || stageOpen(role, stage, status, previewUpcoming);
+}
+
+export type StageProgress = "done" | "current" | "upcoming";
 
 export function stageProgress(stage: Stage, status: AssessmentStatus): StageProgress {
   const current = currentStage(status).number;
   if (stage.number < current) return "done";
   if (stage.number === current) return "current";
-  return "locked";
+  return "upcoming";
 }
 
 export const WHAT_HAPPENS_NEXT =

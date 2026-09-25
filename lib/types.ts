@@ -6,28 +6,7 @@ export type ScopeType = "mandatory" | "enhancement";
 export type Category = "game" | "platform";
 export type RecommendedPath = "shared" | "separate" | "";
 export type SharedCodeLevel = "high" | "medium" | "low" | "";
-export type CodebaseDecision = "shared" | "separate" | "undecided" | "";
 export type AssessmentStatus = "discovery" | "discovery-submitted" | "findings" | "plan" | "plan-submitted" | "agreed";
-
-/** "agree-with-developer" is offered only for the Unity version and Android API level. */
-export type TargetState = "set" | "not-decided" | "agree-with-developer" | "";
-
-/** One text target: the value counts only when the state is "set". The link is used by the P1/P2 layout sketch. */
-export type TargetValue = { state: TargetState; value: string; link?: string };
-
-/** Targets confirmed by the product team; shown to developers above the discovery form. */
-export type PrimeTargets = {
-  codebase: CodebaseDecision;
-  modes: string[];
-  modesOther: string;
-  firstRelease: TargetValue;
-  unityVersion: TargetValue;
-  androidApi: TargetValue;
-  resolution: TargetValue;
-  layout: TargetValue;
-  fpsTarget: TargetValue;
-  sdk: TargetValue;
-};
 
 export type EngineOptionEstimate = {
   coreOrBuildDays: number;
@@ -79,7 +58,6 @@ export type GameInfo = {
 
 export type AssessmentState = {
   gameInfo: GameInfo;
-  primeTargets: PrimeTargets;
   answers: Record<string, QuestionAnswer>;
   engineAssessment: MultiplayerEngineAssessment;
   plan: Workstream[];
@@ -89,11 +67,9 @@ export type AssessmentState = {
 };
 
 /** A draft as read from storage: any part may be missing or out of date. */
-export type SavedDraft = Omit<Partial<AssessmentState>, "gameInfo" | "engineAssessment" | "primeTargets" | "answers" | "status"> & {
+export type SavedDraft = Omit<Partial<AssessmentState>, "gameInfo" | "engineAssessment" | "answers" | "status"> & {
   gameInfo?: Partial<GameInfo>;
   engineAssessment?: Partial<MultiplayerEngineAssessment>;
-  /** Older drafts hold plain strings for the text targets and a separate layoutSketch. */
-  primeTargets?: Record<string, unknown>;
   answers?: Record<string, Partial<QuestionAnswer>>;
   status?: string;
 };

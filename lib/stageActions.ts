@@ -1,5 +1,5 @@
 import { allowedTransitions, Role } from "./permissions";
-import type { AssessmentStatus } from "./types";
+import type { AssessmentState, AssessmentStatus } from "./types";
 
 export type StageAction = {
   to: AssessmentStatus;
@@ -52,13 +52,13 @@ const COPY: Record<string, Copy> = {
   "plan-submitted>plan": {
     label: "Request changes",
     title: "Request changes?",
-    text: "The plan goes back to the developer to edit and submit again.",
+    text: "The plan goes back to the developer to edit, confirm and submit again. Their confirmation ticks are cleared.",
     primary: false,
   },
   "agreed>plan": {
     label: "Reopen plan",
     title: "Reopen the plan?",
-    text: "The plan goes back to in progress and must be submitted and agreed again.",
+    text: "The plan goes back to in progress and must be confirmed, submitted and agreed again. The developer's confirmation ticks are cleared.",
     primary: false,
   },
 };
@@ -69,3 +69,16 @@ export function stageActionsFor(role: Role, status: AssessmentStatus): StageActi
 }
 
 export const UNANSWERED_NOTE = "Unanswered questions will be listed as open items for discussion.";
+
+/** Sending the plan back to the developer clears their confirmations so they confirm again before resubmitting. */
+const CLEARS_CHECKS = new Set(["plan-submitted>plan", "agreed>plan"]);
+
+/** Side effects of moving from one status to the next state's status (used by the editor and the save route). */
+export function withTransitionEffects(from: AssessmentStatus, next: AssessmentState): AssessmentState {
+  if (!CLEARS_CHECKS.has(`${from}>${next.status}`)) return next;
+  return { ...next, checks: next.checks.map(() => false) };
+}
+
+export function applyStatusChange(state: AssessmentState, to: AssessmentStatus): AssessmentState {
+  return withTransitionEffects(state.status, { ...state, status: to });
+}

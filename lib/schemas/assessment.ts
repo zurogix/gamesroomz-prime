@@ -32,30 +32,6 @@ const gameInfoSchema = z.object({
   developer: short,
 });
 
-const targetSchema = z.object({
-  state: z.enum(["set", "not-decided", "agree-with-developer", ""]),
-  value: text,
-  link: short.optional(),
-});
-
-/** "To be agreed with developer" is offered only for the Unity version and Android API level. */
-const fixedTargetSchema = targetSchema.refine((t) => t.state !== "agree-with-developer", {
-  message: "This target cannot be left to the developer.",
-});
-
-const primeTargetsSchema = z.object({
-  codebase: z.enum(["shared", "separate", "undecided", ""]),
-  modes: z.array(short).max(20),
-  modesOther: short,
-  firstRelease: fixedTargetSchema,
-  unityVersion: targetSchema,
-  androidApi: targetSchema,
-  resolution: fixedTargetSchema,
-  layout: fixedTargetSchema,
-  fpsTarget: fixedTargetSchema,
-  sdk: fixedTargetSchema,
-});
-
 const engineOptionSchema = z.object({
   coreOrBuildDays: days,
   mobileRegressionDays: days,
@@ -98,10 +74,12 @@ const workstreamSchema = z.object({
   scopeType: z.enum(["mandatory", "enhancement"]),
 });
 
-/** The full portal state, as saved to Assessment.state and accepted by imports. */
+/**
+ * The full portal state, as saved to Assessment.state and accepted by imports.
+ * Unknown keys (e.g. primeTargets from older saves) are stripped, not rejected.
+ */
 export const assessmentStateSchema = z.object({
   gameInfo: gameInfoSchema,
-  primeTargets: primeTargetsSchema,
   answers: z.record(short, questionAnswerSchema),
   engineAssessment: engineAssessmentSchema,
   plan: z.array(workstreamSchema).max(100),

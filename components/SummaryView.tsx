@@ -1,7 +1,6 @@
 import { CSSProperties, ReactNode } from "react";
 import { deriveFindings, planCoverage, totalPlanDays } from "@/lib/assessment";
 import { discoveryCoverage } from "@/lib/discoveryAnswers";
-import { describeModes } from "@/lib/primeTargets";
 import { scopeProfile } from "@/lib/scopeProfile";
 import { CLASSES, CLASS_LABEL, CONFIRMATIONS, formatDays } from "@/lib/sections";
 import { statusLabel } from "@/lib/stages";
@@ -22,7 +21,6 @@ type Props = {
 
 export default function SummaryView({ state, onOpenWorkstream, stageActions, historySlot }: Props) {
   const profile = scopeProfile(state.plan);
-  const modes = describeModes(state.primeTargets);
   const total = totalPlanDays(state);
   const mandatory = state.plan.filter((w) => w.scopeType === "mandatory").reduce((sum, w) => sum + (Number(w.personDays) || 0), 0);
   const enhancement = total - mandatory;
@@ -45,10 +43,7 @@ export default function SummaryView({ state, onOpenWorkstream, stageActions, his
           <div>
             <span className="label">Prime conversion assessment</span>
             <h2>{state.gameInfo.gameName || "Untitled game"}</h2>
-            <p>
-              Existing mobile PvP → Gamesroomz Prime.
-              {modes.length > 0 ? ` First-release modes: ${modes.join(", ")}.` : " First-release modes not recorded yet."}
-            </p>
+            <p>Existing mobile PvP → Gamesroomz Prime.</p>
             <p>Status: {statusLabel(state.status)} · Developer confirmations: {confirmed} of {CONFIRMATIONS.length}</p>
           </div>
           <div className="verdict">

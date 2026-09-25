@@ -2,13 +2,15 @@
 
 import { KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import { DISCOVERY_QUESTIONS, sectionTitle } from "@/lib/discovery";
-import { ASSESSMENT_SECTIONS, FINDINGS, OVERVIEW, PLAN, SUMMARY } from "@/lib/sections";
+import { PLAN } from "@/lib/sections";
 import { Workstream } from "@/lib/types";
 
 export type PaletteTarget = { view?: string; questionId?: string; workstreamId?: string };
 type Item = PaletteTarget & { text: string; kind: string };
 
 type Props = {
+  /** Only views the user may open; workstreams are listed only when the plan is among them. */
+  views: string[];
   plan: Workstream[];
   onPick: (target: PaletteTarget) => void;
   onClose: () => void;
@@ -16,18 +18,18 @@ type Props = {
 
 const MAX_RESULTS = 40;
 
-function buildItems(plan: Workstream[]): Item[] {
-  const views = [OVERVIEW, ...ASSESSMENT_SECTIONS, FINDINGS, PLAN, SUMMARY].map((v) => ({ text: v, kind: "Section", view: v }));
+function buildItems(views: string[], plan: Workstream[], showWorkstreams: boolean): Item[] {
+  const sections = views.map((v) => ({ text: v, kind: "Section", view: v }));
   const qs = DISCOVERY_QUESTIONS.map((q) => ({ text: `${q.id} · ${q.prompt}`, kind: sectionTitle(q.section), questionId: q.id }));
-  const ws = plan.map((w) => ({ text: w.title, kind: "Workstream", workstreamId: w.id }));
-  return [...views, ...qs, ...ws];
+  const ws = showWorkstreams ? plan.map((w) => ({ text: w.title, kind: "Workstream", workstreamId: w.id })) : [];
+  return [...sections, ...qs, ...ws];
 }
 
-export default function CommandPalette({ plan, onPick, onClose }: Props) {
+export default function CommandPalette({ views, plan, onPick, onClose }: Props) {
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
   const input = useRef<HTMLInputElement>(null);
-  const all = useMemo(() => buildItems(plan), [plan]);
+  const all = useMemo(() => buildItems(views, plan, views.includes(PLAN)), [views, plan]);
   const needle = query.trim().toLowerCase();
   const items = (needle ? all.filter((i) => `${i.text} ${i.kind}`.toLowerCase().includes(needle)) : all).slice(0, MAX_RESULTS);
 

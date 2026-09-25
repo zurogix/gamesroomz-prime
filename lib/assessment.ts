@@ -7,14 +7,11 @@ import { DISCOVERY_QUESTIONS } from "./discovery";
 import { hydrateAnswer } from "./discoveryAnswers";
 import { replaceLegacyDefaults } from "./legacyTemplateDefaults";
 import { migrateClassification } from "./migrate";
-import { hydratePrimeTargets } from "./hydratePrimeTargets";
-import { emptyPrimeTargets } from "./primeTargets";
 
 export { applyEngineEstimate, engineAssessmentIssues, engineOptionTotal, rewriteNeedsEvidence, selectedEngineEstimate } from "./engine";
 
 export const initialAssessment = (): AssessmentState => ({
   gameInfo: { gameName: "Bubble Shooter PvP", developer: "" },
-  primeTargets: emptyPrimeTargets(),
   answers: {},
   engineAssessment: emptyEngineAssessment(),
   plan: planTemplate.map((item) => ({ ...item })),
@@ -44,7 +41,7 @@ function hydrateAnswers(saved: SavedDraft["answers"]): AssessmentState["answers"
   return Object.fromEntries(known.map((q) => [q.id, hydrateAnswer(saved[q.id])]));
 }
 
-/** Fill in anything missing from a saved v2 draft and drop fields that no longer exist. */
+/** Fill in anything missing from a saved v2 draft and drop fields that no longer exist (e.g. primeTargets). */
 export function hydrateAssessment(saved: SavedDraft): AssessmentState {
   const base = initialAssessment();
   const savedPlanById = new Map((saved.plan ?? []).map((item) => [item.id, item]));
@@ -63,7 +60,6 @@ export function hydrateAssessment(saved: SavedDraft): AssessmentState {
       gameName: saved.gameInfo?.gameName ?? base.gameInfo.gameName,
       developer: saved.gameInfo?.developer ?? base.gameInfo.developer,
     },
-    primeTargets: hydratePrimeTargets(saved.primeTargets),
     answers: hydrateAnswers(saved.answers),
     status: hydrateStatus(saved.status),
     lastSavedAt: saved.lastSavedAt,

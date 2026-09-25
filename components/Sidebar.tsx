@@ -1,14 +1,14 @@
-import { useEffect } from "react";
+import { Fragment, useEffect } from "react";
 import { planFieldsDone, PLAN_FIELD_COUNT } from "@/lib/assessment";
 import { DISCOVERY_SECTIONS } from "@/lib/discovery";
 import { discoveryCoverage } from "@/lib/discoveryAnswers";
+import { isProduct } from "@/lib/permissions";
 import { OVERVIEW } from "@/lib/sections";
-import { isPreview, Stage, stageById, stageVisible } from "@/lib/stages";
+import { isPreview, Stage } from "@/lib/stages";
 import { AssessmentState } from "@/lib/types";
 import { ThemeChoice } from "@/hooks/useTheme";
 import ProgressRing from "./ProgressRing";
 import SidebarSectionItem from "./SidebarSectionItem";
-import LockIcon from "./stages/LockIcon";
 import UserBadge, { CurrentUser } from "./UserBadge";
 
 type Props = {
@@ -19,11 +19,15 @@ type Props = {
   onOpenPalette: () => void;
   onTheme: (theme: ThemeChoice) => void;
   user: CurrentUser;
+  /** Only open stages (plus previewed ones for product); unopened stages are not listed at all. */
+  stages: Stage[];
+  previewUpcoming: boolean;
+  onPreviewUpcoming: (on: boolean) => void;
 };
 
 const THEMES: ThemeChoice[] = ["light", "system", "dark"];
 
-export default function Sidebar({ state, active, theme, user, onNavigate, onOpenPalette, onTheme }: Props) {
+export default function Sidebar({ state, active, theme, user, onNavigate, onOpenPalette, onTheme, stages, previewUpcoming, onPreviewUpcoming }: Props) {
   useEffect(() => {
     document.querySelector(".nav-item.on")?.scrollIntoView({ block: "nearest", inline: "nearest" });
   }, [active]);
@@ -35,24 +39,21 @@ export default function Sidebar({ state, active, theme, user, onNavigate, onOpen
       <span className="grow">{view}</span>
     </button>
   );
-  const open = (stage: Stage) => stageVisible(user.role, stage, state.status);
-  const groupLabel = (stage: Stage, extra = "") => (
+  const groupLabel = (stage: Stage) => (
     <div className="nav-group label">
-      {stage.number} · {stage.title}{extra}
-      {!open(stage) && <LockIcon />}
-      {isPreview(user.role, stage, state.status) && <span className="preview-tag">Preview</span>}
+      Step {stage.number} · {stage.title}
+      {stage.id === "discovery" && ` · ${discoveryCoverage(state.answers)}%`}
+      {isPreview(user.role, stage, state.status, previewUpcoming) && <span className="preview-tag">Preview</span>}
     </div>
   );
-  const stageItem = (stage: Stage, ring?: [number, number]) => {
-    if (open(stage)) return navItem(stage.view, ring);
-    return (
-      <button type="button" className="nav-item locked" disabled title={stage.lockedMessage}>
-        <LockIcon />
-        <span className="grow">{stage.view}</span>
-      </button>
-    );
+  const stageItems = (stage: Stage) => {
+    if (stage.id === "discovery") {
+      return DISCOVERY_SECTIONS.map((s) => (
+        <SidebarSectionItem key={s.id} state={state} section={s} active={active === s.title} onNavigate={onNavigate} />
+      ));
+    }
+    return navItem(stage.view, stage.id === "plan" ? [plansDone, state.plan.length] : undefined);
   };
-  const discovery = stageById("discovery");
 
   return (
     <aside className="side">
@@ -70,18 +71,20 @@ export default function Sidebar({ state, active, theme, user, onNavigate, onOpen
       </button>
       <nav className="nav" aria-label="Sections">
         {navItem(OVERVIEW)}
-        {groupLabel(discovery, ` · ${discoveryCoverage(state.answers)}%`)}
-        {DISCOVERY_SECTIONS.map((s) => (
-          <SidebarSectionItem key={s.id} state={state} section={s} active={active === s.title} onNavigate={onNavigate} />
+        {stages.map((stage) => (
+          <Fragment key={stage.id}>
+            {groupLabel(stage)}
+            {stageItems(stage)}
+          </Fragment>
         ))}
-        {groupLabel(stageById("findings"))}
-        {stageItem(stageById("findings"))}
-        {groupLabel(stageById("plan"))}
-        {stageItem(stageById("plan"), [plansDone, state.plan.length])}
-        {groupLabel(stageById("summary"))}
-        {stageItem(stageById("summary"))}
       </nav>
       <div className="side-foot">
+        {isProduct(user.role) && (
+          <label className="preview-switch">
+            <input type="checkbox" role="switch" checked={previewUpcoming} onChange={(e) => onPreviewUpcoming(e.target.checked)} />
+            Preview upcoming stages
+          </label>
+        )}
         <span className="label">Theme</span>
         <div className="theme-row">
           {THEMES.map((t) => (

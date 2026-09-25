@@ -24,7 +24,7 @@ export default function TeamManager({ user, initialMembers }: Props) {
       <main className="page-main">
         <h1>Team</h1>
         <p className="hint">
-          Only invited people can sign in. Product can change Prime targets and set any status; developers fill in
+          Only invited people can sign in. Product can change everything and move the assessment between stages; developers fill in
           discovery and the plan.
         </p>
         <InviteForm onInvited={refresh} />
