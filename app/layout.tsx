@@ -9,6 +9,11 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  // The dark entry comes first so it wins when it matches; the light colour is the fallback.
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#121A22" },
+    { color: "#EDF2F7" },
+  ],
 };
 
 const FONTS_URL =
