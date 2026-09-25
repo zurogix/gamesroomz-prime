@@ -43,7 +43,7 @@ describe("POST /api/games/[id]/responses/me/submit", () => {
     assessmentFindFirst.mockResolvedValue({ status: "discovery" });
   });
 
-  it("accepts 'Not sure yet' without a note as an answer", async () => {
+  it("accepts 'Not sure yet' without a note, and returns what the thank-you screen needs", async () => {
     responseFindFirst.mockResolvedValue(row(notSureWithoutNotes()));
     responseUpdate.mockImplementation(async () => ({ ...row(notSureWithoutNotes(), DiscoveryStatus.submitted), submittedAt: new Date() }));
 
@@ -51,7 +51,10 @@ describe("POST /api/games/[id]/responses/me/submit", () => {
 
     expect(response.status).toBe(200);
     expect(responseUpdate).toHaveBeenCalledOnce();
-    expect((await response.json()).response.status).toBe("submitted");
+    const body = await response.json();
+    expect(body.response.status).toBe("submitted");
+    // The thank-you screen shows "Submitted on <date, time>" from this.
+    expect(new Date(body.response.submittedAt).toString()).not.toBe("Invalid Date");
   });
 
   it("refuses while a question has no answer at all", async () => {

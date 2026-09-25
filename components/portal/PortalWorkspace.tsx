@@ -13,6 +13,7 @@ import SummaryView from "@/components/SummaryView";
 import CompareView from "@/components/discovery/CompareView";
 import DeveloperPicker from "@/components/discovery/DeveloperPicker";
 import ResponsesPanel from "@/components/discovery/ResponsesPanel";
+import SubmittedView from "@/components/discovery/SubmittedView";
 import ProgressLine from "@/components/stages/ProgressLine";
 import StageActions from "@/components/stages/StageActions";
 import SubmitDiscoveryButton from "@/components/stages/SubmitDiscoveryButton";
@@ -27,7 +28,7 @@ import { railKindFor } from "@/lib/rail";
 import { canEdit, isProduct } from "@/lib/permissions";
 import { discoveryKpi, publishFindingsNote } from "@/lib/responses";
 import { combineSaveStatus } from "@/lib/saveStatus";
-import { ASSESSMENT_SECTIONS, COMPARE, FINDINGS, OVERVIEW, PLAN, SUMMARY } from "@/lib/sections";
+import { ASSESSMENT_SECTIONS, COMPARE, FINDINGS, OVERVIEW, PLAN, SUBMITTED, SUMMARY } from "@/lib/sections";
 import { currentStage, navigableStages, Stage, stageById, viewOpen } from "@/lib/stages";
 import { AssessmentState } from "@/lib/types";
 import { SaveStatusContext } from "@/components/SaveStatusContext";
@@ -78,10 +79,17 @@ export default function PortalWorkspace({ gameId, initialState, initialVersion, 
       <StageActions state={state} role={role} onStatus={setStatus} onToggleCheck={toggleCheck} publishNote={publishFindingsNote(discovery.responses)} />
     ) : null;
 
+  /** On success the developer sees the thank-you screen instead of the section they were on. */
+  const submitAndThank = async (): Promise<string | null> => {
+    const failure = await discovery.submitOwn();
+    if (!failure) nav.showTransient(SUBMITTED);
+    return failure;
+  };
+
   const submitAction = discovery.canEditOwn ? (
     <SubmitDiscoveryButton
       unanswered={unansweredQuestions(answers)}
-      onSubmit={discovery.submitOwn}
+      onSubmit={submitAndThank}
       onJumpToQuestion={nav.jumpToQuestion}
       onBlocked={() => setSubmitAttempted(true)}
     />
@@ -90,6 +98,15 @@ export default function PortalWorkspace({ gameId, initialState, initialVersion, 
   const productOnly = <T,>(node: T) => (isProduct(role) ? node : undefined);
 
   function renderView() {
+    if (shownView === SUBMITTED) {
+      return (
+        <SubmittedView
+          submittedAt={discovery.own?.submittedAt ?? null}
+          onOverview={() => nav.navigate(OVERVIEW)}
+          onViewAnswers={() => nav.navigate(ASSESSMENT_SECTIONS[0])}
+        />
+      );
+    }
     if (shownView === COMPARE) return <CompareView responses={discovery.responses} />;
     if (ASSESSMENT_SECTIONS.includes(shownView)) {
       return (

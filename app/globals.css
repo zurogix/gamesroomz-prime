@@ -423,6 +423,10 @@ a.btn{text-decoration:none}
 .rail-stage .label{color:var(--tint-ink)}
 .rail-stage p{margin:4px 0 0;font-weight:700}
 .rail-stage .rail-progress-item{margin-top:10px}
+.submitted-card{max-width:640px;margin:24px auto 0;gap:14px}
+.submitted-card h1{font-size:24px}
+.submitted-card p{margin:0}
+.submitted-card .pager-actions{align-items:center;gap:16px}
 .rail-note{margin:0;font-size:13px;line-height:1.5;color:var(--muted)}
 .rail-stage-note{display:block;margin-top:6px}
 .viewing-bar{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}

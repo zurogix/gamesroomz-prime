@@ -31,7 +31,7 @@ export default function GamesHome({ user, initialGames }: Props) {
           <div className="table-wrap">
             <table>
               <thead>
-                <tr><th>Game</th><th>Stage</th><th>Last updated</th><th>Updated by</th>{canManage && <th />}</tr>
+                <tr><th>Game</th><th>Stage</th><th>Discovery</th><th>Last updated</th><th>Updated by</th>{canManage && <th />}</tr>
               </thead>
               <tbody>
                 {games.map((g) => <GameRow key={g.id} game={g} canManage={canManage} onChanged={refresh} />)}

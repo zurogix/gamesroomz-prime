@@ -104,5 +104,9 @@ export function stageProgress(stage: Stage, status: AssessmentStatus): StageProg
   return "upcoming";
 }
 
-export const WHAT_HAPPENS_NEXT =
-  "Thanks. The product team will review your answers. You'll then see a summary of findings and possible approaches to comment on. We may ask a few follow-up questions or arrange a short walkthrough.";
+export const SUBMITTED_TITLE = "Thank you — your answers have been submitted";
+
+export const SUBMITTED_TEXT =
+  "The product team will review your answers. You'll then see a summary of findings and possible approaches to comment on. We may ask a few follow-up questions or arrange a short walkthrough.";
+
+export const WHAT_HAPPENS_NEXT = `Thanks. ${SUBMITTED_TEXT}`;

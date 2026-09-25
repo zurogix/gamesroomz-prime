@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { apiRequest } from "@/lib/apiClient";
+import { discoverySummaryText } from "@/lib/gameDiscoverySummary";
 import { currentStage, statusLabel } from "@/lib/stages";
 import type { GameSummary } from "@/lib/server/games";
 
@@ -40,6 +41,7 @@ export default function GameRow({ game, canManage, onChanged }: Props) {
         <b className="stage-cell">Stage {currentStage(game.status).number} · {currentStage(game.status).title}</b>
         <small className="hint">{statusLabel(game.status)}</small>
       </td>
+      <td>{discoverySummaryText(game.discovery)}</td>
       <td className="num">{formatDate(game.updatedAt)}</td>
       <td>{game.updatedBy || "—"}</td>
       {canManage && (

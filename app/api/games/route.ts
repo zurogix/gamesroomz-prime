@@ -8,7 +8,7 @@ export async function GET() {
   return handle("GET /api/games", async () => {
     const auth = await requireProfile();
     if (!auth.ok) return auth.response;
-    return NextResponse.json({ games: await listGames() });
+    return NextResponse.json({ games: await listGames(auth.value) });
   });
 }
 
