@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { normalizeAnswers } from "@/lib/discoveryAnswers";
 import { ANSWERS_CONFLICT, editResponseRefusal, ownResponseRefusal } from "@/lib/responses";
 import { idParamsSchema, saveResponseSchema } from "@/lib/schemas/api";
 import { requireProfile } from "@/lib/server/auth";
@@ -38,7 +39,8 @@ export async function PUT(request: Request, { params }: Context) {
     const response = await getOrCreateOwnResponse(parsed.value.id, auth.value.id);
     const refusal = editResponseRefusal(auth.value, response, gameStatus);
     if (refusal) return refuse(refusal);
-    const outcome = await saveAnswers(response.id, body.value.answers, body.value.version);
+    // A "Not sure" answer never keeps a basis, whichever client saved it.
+    const outcome = await saveAnswers(response.id, normalizeAnswers(body.value.answers), body.value.version);
     if (outcome.kind === "conflict") return jsonError(409, ANSWERS_CONFLICT);
     return NextResponse.json({ version: outcome.version, updatedAt: outcome.updatedAt });
   });

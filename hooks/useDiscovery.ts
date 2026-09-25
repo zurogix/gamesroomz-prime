@@ -2,7 +2,8 @@
 
 import { useCallback, useState } from "react";
 import { apiRequest } from "@/lib/apiClient";
-import { answerFor, type AnswerMap } from "@/lib/discoveryAnswers";
+import { DISCOVERY_QUESTIONS } from "@/lib/discovery";
+import { answerFor, normalizeAnswer, type AnswerMap } from "@/lib/discoveryAnswers";
 import { QuestionAnswer } from "@/lib/discoveryTypes";
 import type { Role } from "@/lib/permissions";
 import type { ExportResponse } from "@/lib/exportMarkdown";
@@ -35,7 +36,12 @@ export function useDiscovery(gameId: string, role: Role, gameStatus: AssessmentS
   const autosave = useVersionedAutosave(answersBackupKey(gameId), answers, initial.own?.version ?? 1, send, canEditOwn);
 
   const updateAnswer = useCallback((id: string, update: (answer: QuestionAnswer) => QuestionAnswer) => {
-    setAnswers((current) => ({ ...current, [id]: update(answerFor(current, id)) }));
+    const question = DISCOVERY_QUESTIONS.find((q) => q.id === id);
+    setAnswers((current) => {
+      const next = update(answerFor(current, id));
+      // A "Not sure" answer keeps no basis, so the saved answer and the export never show one.
+      return { ...current, [id]: question ? normalizeAnswer(question, next) : next };
+    });
   }, []);
 
   /** Saves anything pending, then submits; resolves to an error message or null. */

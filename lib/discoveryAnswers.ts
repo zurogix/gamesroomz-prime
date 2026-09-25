@@ -79,6 +79,42 @@ export function isNotSure(q: DiscoveryQuestion, a: QuestionAnswer): boolean {
   return a.choice.selected.includes(NOT_SURE_ID);
 }
 
+const onlyNotSure = (c: ChoiceAnswer | undefined) => Boolean(c && c.selected.length > 0 && c.selected.every((id) => id === NOT_SURE_ID));
+
+/**
+ * The whole answer is "Not sure": the choice is only Not sure, the open question is "Not sure yet", or
+ * every row is Not sure. A rows question with at least one real answer is not.
+ */
+export function isEntirelyNotSure(q: DiscoveryQuestion, a: QuestionAnswer): boolean {
+  if (q.type === "open") return a.notSureYet && !a.text.trim();
+  if (q.type === "rows") return q.rows.every((row) => onlyNotSure(a.rows[row.id]));
+  return onlyNotSure(a.choice);
+}
+
+/** The basis (and how it could be checked) applies only to a real answer, never to a "Not sure" one. */
+export function showsBasis(q: DiscoveryQuestion, a: QuestionAnswer): boolean {
+  return isAnswered(q, a) && !isEntirelyNotSure(q, a);
+}
+
+/** A "Not sure" answer offers the optional "What would you need to check?" note instead of a basis. */
+export const NOT_SURE_NOTE_LABEL = "What would you need to check? (optional)";
+
+/** Drops a basis and "How could this be checked?" left over from before the answer became "Not sure". */
+export function normalizeAnswer(q: DiscoveryQuestion, a: QuestionAnswer): QuestionAnswer {
+  if (!isEntirelyNotSure(q, a) || (!a.basis && !a.confirmBy)) return a;
+  return { ...a, basis: "", confirmBy: "" };
+}
+
+/** normalizeAnswer for every known question; used by the editor and by the save route. */
+export function normalizeAnswers<T extends AnswerMap>(answers: T): T {
+  const byId = new Map(DISCOVERY_QUESTIONS.map((q) => [q.id, q]));
+  const entries = Object.entries(answers).map(([id, a]) => {
+    const q = byId.get(id);
+    return [id, q && a ? normalizeAnswer(q, a) : a];
+  });
+  return Object.fromEntries(entries) as T;
+}
+
 export function followUpVisible(followUp: FollowUp, a: QuestionAnswer): boolean {
   if (!followUp.showWhen) return true;
   return a.choice.selected.some((id) => followUp.showWhen!.includes(id));

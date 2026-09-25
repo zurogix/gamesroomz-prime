@@ -1,10 +1,11 @@
-import { emptyChoice, followUpVisible, isAnswered } from "@/lib/discoveryAnswers";
+import { emptyChoice, followUpVisible, isAnswered, isEntirelyNotSure, showsBasis } from "@/lib/discoveryAnswers";
 import { questionElementId } from "@/lib/rail";
 import { DiscoveryQuestion, QuestionAnswer } from "@/lib/discoveryTypes";
 import BasisField from "./BasisField";
 import ChoiceGroup from "./ChoiceGroup";
 import EvidenceField from "./EvidenceField";
 import FollowUpField from "./FollowUpField";
+import NotSureNoteField from "./NotSureNoteField";
 import OpenAnswer from "./OpenAnswer";
 import ProjectFilesField from "./ProjectFilesField";
 import TagChips from "./TagChips";
@@ -21,6 +22,8 @@ export default function DiscoveryQuestionCard({ question: q, answer, needsAnswer
   const titleId = `q-${q.id}`;
   const patch = (p: Partial<QuestionAnswer>) => onChange((a) => ({ ...a, ...p }));
   const answered = isAnswered(q, answer);
+  // Open questions have their own note next to "Not sure yet".
+  const choiceNotSure = q.type !== "open" && isEntirelyNotSure(q, answer);
 
   return (
     <article className={`dq ${answered ? "answered" : ""} ${needsAnswer ? "needs-answer" : ""}`} id={questionElementId(q.id)} tabIndex={-1} aria-labelledby={titleId}>
@@ -74,7 +77,8 @@ export default function DiscoveryQuestionCard({ question: q, answer, needsAnswer
         ))}
 
         <EvidenceField id={q.id} evidence={q.evidence} hint={q.evidenceHint} value={answer.evidence} onChange={(evidence) => patch({ evidence })} />
-        {answered && <BasisField id={q.id} answer={answer} onChange={patch} />}
+        {choiceNotSure && <NotSureNoteField id={q.id} value={answer.needsChecking} onChange={(needsChecking) => patch({ needsChecking })} />}
+        {showsBasis(q, answer) && <BasisField id={q.id} answer={answer} onChange={patch} />}
       </div>
     </article>
   );

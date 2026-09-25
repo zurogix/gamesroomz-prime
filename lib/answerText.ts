@@ -1,4 +1,4 @@
-import { BASIS_OPTIONS, followUpVisible, needsConfirmation, NOT_SURE_ID, OTHER_ID } from "./discoveryAnswers";
+import { BASIS_OPTIONS, followUpVisible, isEntirelyNotSure, needsConfirmation, NOT_SURE_ID, OTHER_ID } from "./discoveryAnswers";
 import { ChoiceAnswer, ChoiceOption, DiscoveryQuestion, FollowUp, FollowUpAnswer, QuestionAnswer } from "./discoveryTypes";
 
 export const EMPTY = "—";
@@ -37,8 +37,12 @@ export function answerSummary(q: DiscoveryQuestion, a: QuestionAnswer): string {
 
 export type AnswerDetail = { label: string; value: string };
 
-/** Follow-ups, evidence, basis and how it could be checked — only the parts that were filled in. */
+/**
+ * Follow-ups, evidence, and either the basis with how it could be checked (a real answer) or what would
+ * need checking ("Not sure") — only the parts that were filled in.
+ */
 export function answerDetails(q: DiscoveryQuestion, a: QuestionAnswer): AnswerDetail[] {
+  const notSure = isEntirelyNotSure(q, a);
   const followUps = (q.followUps ?? [])
     .filter((f) => followUpVisible(f, a))
     .map((f) => ({ label: f.prompt, value: describeFollowUp(f, a.followUps[f.id]) ?? "" }));
@@ -46,7 +50,9 @@ export function answerDetails(q: DiscoveryQuestion, a: QuestionAnswer): AnswerDe
   return [
     ...followUps,
     { label: "Evidence", value: a.evidence.trim() },
-    { label: "Basis", value: basis },
-    { label: "How could this be checked", value: needsConfirmation(a) ? a.confirmBy.trim() : "" },
+    { label: "Basis", value: notSure ? "" : basis },
+    { label: "How could this be checked", value: !notSure && needsConfirmation(a) ? a.confirmBy.trim() : "" },
+    // Open questions carry the note in their answer text ("Not sure yet — would need to check: …").
+    { label: "Would need to check", value: notSure && q.type !== "open" ? a.needsChecking.trim() : "" },
   ].filter((d) => d.value);
 }
