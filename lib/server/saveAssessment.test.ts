@@ -10,8 +10,8 @@ vi.mock("./db", () => ({ db: { assessment: { findFirst }, $transaction: transact
 
 const { saveAssessment } = await import("./saveAssessment");
 
-const product: SessionProfile = { id: "prod-1", email: "pm@example.com", name: "PM", role: "product" };
-const developer: SessionProfile = { id: "dev-1", email: "dev@example.com", name: "Dev", role: "developer" };
+const product: SessionProfile = { id: "prod-1", email: "pm@example.com", name: "PM", role: "product", mustChangePassword: false };
+const developer: SessionProfile = { id: "dev-1", email: "dev@example.com", name: "Dev", role: "developer", mustChangePassword: false };
 
 /** A stored row whose status column says one thing while its JSON still holds an older status. */
 function storedRow(status: DbStatus, state: AssessmentState = initialAssessment()) {

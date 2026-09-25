@@ -5,7 +5,7 @@ import { answerFor, isAnswered } from "@/lib/discoveryAnswers";
 import { CONFIRMATIONS } from "@/lib/sections";
 import { StageAction, UNANSWERED_NOTE } from "@/lib/stageActions";
 import { AssessmentState } from "@/lib/types";
-import ConfirmDialog from "./ConfirmDialog";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 type Props = {
   state: AssessmentState;

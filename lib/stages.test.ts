@@ -92,7 +92,7 @@ describe("stage actions and next step", () => {
 
   it("describes the next step for every role and status", () => {
     expect(nextStepText("developer", "discovery-submitted")).toBe(WHAT_HAPPENS_NEXT);
-    expect(nextStepText("product", "discovery")).toBe("Invite the developer from Team, then share the portal link.");
+    expect(nextStepText("product", "discovery")).toBe("Create the developer's account on Team, then share the portal link and their temporary password privately.");
     STATUSES.forEach(({ value }) => {
       expect(nextStepText("developer", value)).not.toBe("");
       expect(nextStepText("product", value)).not.toBe("");

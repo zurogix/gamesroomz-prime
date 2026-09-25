@@ -4,12 +4,15 @@ import { useState } from "react";
 import { apiRequest } from "@/lib/apiClient";
 import type { TeamMember } from "@/lib/server/team";
 import { ROLE_LABEL } from "@/components/UserBadge";
+import type { Credentials } from "./OneTimeCredentials";
+import ResetPasswordDialog from "./ResetPasswordDialog";
 
-type Props = { member: TeamMember; isSelf: boolean; onChanged: () => void };
+type Props = { member: TeamMember; isSelf: boolean; onChanged: () => void; onPasswordReset: (credentials: Credentials) => void };
 type Role = TeamMember["role"];
 
-export default function TeamRow({ member, isSelf, onChanged }: Props) {
+export default function TeamRow({ member, isSelf, onChanged, onPasswordReset }: Props) {
   const [error, setError] = useState("");
+  const [resetting, setResetting] = useState(false);
 
   async function patch(body: object) {
     setError("");
@@ -19,8 +22,13 @@ export default function TeamRow({ member, isSelf, onChanged }: Props) {
   }
 
   function remove() {
-    if (!window.confirm(`Remove ${member.name}'s access to the portal? Their account is kept and can be invited again.`)) return;
+    if (!window.confirm(`Remove ${member.name}'s access to the portal? Their account is kept and can be given access again.`)) return;
     patch({ removed: true });
+  }
+
+  function reset(credentials: Credentials) {
+    setResetting(false);
+    onPasswordReset(credentials);
   }
 
   return (
@@ -41,7 +49,13 @@ export default function TeamRow({ member, isSelf, onChanged }: Props) {
         </select>
       </td>
       <td className="row-actions">
-        {!isSelf && <button type="button" className="btn quiet" onClick={remove}>Remove access</button>}
+        {!isSelf && (
+          <>
+            <button type="button" className="btn quiet" onClick={() => setResetting(true)}>Reset password</button>
+            <button type="button" className="btn quiet" onClick={remove}>Remove access</button>
+          </>
+        )}
+        {resetting && <ResetPasswordDialog member={member} onReset={reset} onCancel={() => setResetting(false)} />}
       </td>
     </tr>
   );

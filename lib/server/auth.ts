@@ -1,13 +1,15 @@
 import type { Profile } from "@prisma/client";
+import { headers } from "next/headers";
 import { cache } from "react";
 import { serverEnv } from "@/lib/env";
+import { MUST_CHANGE_PASSWORD_MESSAGE, PATHNAME_HEADER, passwordChangeGate, PasswordGate } from "@/lib/passwordGate";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { db } from "./db";
 import { jsonError, Result } from "./http";
 
 export const NO_ACCESS_MESSAGE = "Your account doesn't have access to this portal yet";
 
-export type SessionProfile = Pick<Profile, "id" | "email" | "name" | "role">;
+export type SessionProfile = Pick<Profile, "id" | "email" | "name" | "role" | "mustChangePassword">;
 
 /** Who the session token belongs to. Access still requires an active Profile (see getProfile). */
 export type SessionIdentity = { id: string; email: string; name: string };
@@ -30,7 +32,14 @@ export const getSessionUser = cache(async (): Promise<SessionIdentity | null> =>
   }
 });
 
-const toSessionProfile = ({ id, email, name, role }: Profile): SessionProfile => ({ id, email, name, role });
+const toSessionProfile = ({ id, email, name, role, mustChangePassword }: Profile): SessionProfile => ({ id, email, name, role, mustChangePassword });
+
+/** What the temporary-password gate says about the current request (see the middleware). */
+export async function currentPasswordGate(profile: SessionProfile): Promise<PasswordGate> {
+  if (!profile.mustChangePassword) return "allow";
+  const pathname = (await headers()).get(PATHNAME_HEADER) ?? "";
+  return passwordChangeGate(pathname);
+}
 
 /** The bootstrap product user gets a profile on first login. A removed (soft-deleted) profile stays removed. */
 async function bootstrapProfile(identity: SessionIdentity): Promise<Profile | null> {
@@ -53,12 +62,16 @@ export const getProfile = cache(async (identity: SessionIdentity): Promise<Sessi
   return created ? toSessionProfile(created) : null;
 });
 
-/** For API routes: the caller's profile, or a 401/403 response. */
+/**
+ * For API routes: the caller's profile, or a 401/403 response. While the caller still has a
+ * temporary password, only /api/me and /api/me/password-changed are answered.
+ */
 export async function requireProfile(): Promise<Result<SessionProfile>> {
   const user = await getSessionUser();
   if (!user) return { ok: false, response: jsonError(401, "Please sign in.") };
   const profile = await getProfile(user);
   if (!profile) return { ok: false, response: jsonError(403, NO_ACCESS_MESSAGE) };
+  if ((await currentPasswordGate(profile)) !== "allow") return { ok: false, response: jsonError(403, MUST_CHANGE_PASSWORD_MESSAGE) };
   return { ok: true, value: profile };
 }
 

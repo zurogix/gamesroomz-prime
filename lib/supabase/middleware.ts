@@ -1,16 +1,22 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { publicEnv } from "@/lib/env";
+import { PATHNAME_HEADER } from "@/lib/passwordGate";
 
-const PUBLIC_PATHS = ["/login", "/forgot-password"];
+const PUBLIC_PATHS = ["/login"];
 
 export function isPublicPath(pathname: string) {
-  return PUBLIC_PATHS.includes(pathname) || pathname.startsWith("/auth/");
+  return PUBLIC_PATHS.includes(pathname);
 }
 
-/** Refreshes the Supabase session cookie and sends signed-out visitors to /login. */
+/**
+ * Refreshes the Supabase session cookie and sends signed-out visitors to /login. It also passes the
+ * path on to server code (overwriting anything the client sent) for the temporary-password gate.
+ */
 export async function updateSession(request: NextRequest) {
-  const response = NextResponse.next({ request });
+  const headers = new Headers(request.headers);
+  headers.set(PATHNAME_HEADER, request.nextUrl.pathname);
+  const response = NextResponse.next({ request: { headers } });
   const supabase = createServerClient(publicEnv.supabaseUrl(), publicEnv.supabaseAnonKey(), {
     cookies: {
       getAll: () => request.cookies.getAll(),

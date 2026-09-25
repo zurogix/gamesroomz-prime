@@ -13,7 +13,7 @@ Internal Next.js application for assessing and planning conversion of existing U
 - Mandatory conversion vs optional enhancement separation
 - Person-day estimates, dependencies and technical risk
 - Automatic management summary explaining what "redo" means
-- Invite-only accounts, one shared assessment per game, saved versions
+- Accounts created by the product team (no sign-up), one shared assessment per game, saved versions
 
 ## Setup
 
@@ -26,32 +26,32 @@ Copy `.env.example` to `.env.local` for local development, and set the same valu
 | --- | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Project Settings → API | Public |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Project Settings → API | Public |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project Settings → API | **Server only** — used to send invites; never exposed to the browser |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project Settings → API | **Server only** — used to create accounts and set temporary passwords; never exposed to the browser |
 | `DATABASE_URL` | Supabase → Database → Connection string, transaction pooler | Port `6543`, add `?pgbouncer=true` |
 | `DIRECT_URL` | Supabase → Database → Connection string, session pooler | Port `5432`; used by migrations |
-| `NEXT_PUBLIC_SITE_URL` | The production URL, e.g. `https://<prod domain>` | Used in invite emails |
 | `PRIME_BOOTSTRAP_PRODUCT_EMAIL` | Your choice | The first product user; their profile is created on first login |
 
 ### Supabase dashboard
 
 - **Authentication → Sign In / Providers → Email:** keep Email enabled and turn **Allow new users to sign up off**.
-  Access is invite-only: people are invited from **Team** in the portal.
-- **Authentication → URL Configuration:** set **Site URL** to `NEXT_PUBLIC_SITE_URL`, and add these **Redirect URLs**
-  (and the same for any preview domain you use):
-  - `https://<prod domain>/auth/set-password`
-  - `https://<prod domain>/auth/callback`
+  Accounts are created by the product team on the **Team** page; the portal sends no emails.
 - **Database:** all portal tables live in the `prime` Postgres schema and are accessed only by the server through
   Prisma, which checks the user's role on every request. **Do not add `prime` to the exposed schemas** in the Data API
   settings: the tables have no row-level security policies for browser access.
-- **Emails:** the default invite and reset templates work as they are. The links land on `/auth/set-password`, which
-  signs the user in and asks them to choose a password.
 
 ### First sign-in
 
-1. Create the first user in Supabase (**Authentication → Users → Add user**, or send them an invite) with the email
-   in `PRIME_BOOTSTRAP_PRODUCT_EMAIL`.
+1. Create the first product account in the Supabase dashboard: **Authentication → Users → Add user**, with the email
+   in `PRIME_BOOTSTRAP_PRODUCT_EMAIL`, a password, and **Auto confirm user** ticked.
 2. When they sign in, the portal creates their profile with the **product** role.
-3. They can then invite everyone else from **Team**. Nobody else gets access automatically.
+3. They create everyone else's account on the **Team** page (**Create account**): name, email, role and a temporary
+   password (use **Generate**). No email is sent — the page shows the email and temporary password once, to share
+   privately. On first sign-in the new user must choose their own password before they can do anything else.
+   If the email already has a Supabase user (e.g. added in the dashboard), that user is linked and given the
+   temporary password.
+4. Forgotten passwords: product uses **Reset password** on the Team page, which shows a new temporary password once.
+   Everyone can change their own password from **Change password** in the user menu.
+   Nobody gets access automatically.
 
 ### Database migrations
 
@@ -85,7 +85,7 @@ A draft saved in the browser by the earlier, local-only version can be imported 
 
 Four stages, shown as a progress line at the top of each game ("Step 1: Discovery"):
 
-1. **Discovery (A–I)** — the product team invites the developer; the developer answers the discovery form and
+1. **Discovery (A–I)** — the product team creates the developer's account; the developer answers the discovery form and
    submits it (Discovery in progress → Discovery submitted — under review). Product then publishes findings or
    reopens discovery for follow-up questions.
 2. **Findings & options** — product publishes findings; the developer responds, including the Multiplayer Engine 2.0

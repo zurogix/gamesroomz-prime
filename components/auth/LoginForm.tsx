@@ -39,7 +39,7 @@ export default function LoginForm() {
       </div>
       {error && <p className="form-error" role="alert">{error}</p>}
       <button type="submit" className="btn primary" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
-      <a className="hint" href="/forgot-password">Forgot your password?</a>
+      <p className="hint">Forgot your password? Ask the product team to reset it.</p>
     </form>
   );
 }

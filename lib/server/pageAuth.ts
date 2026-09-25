@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import type { CurrentUser } from "@/components/UserBadge";
-import { getProfile, getSessionUser, SessionIdentity, SessionProfile } from "./auth";
+import { CHANGE_PASSWORD_PATH } from "@/lib/passwordGate";
+import { currentPasswordGate, getProfile, getSessionUser, SessionIdentity, SessionProfile } from "./auth";
 
 export type PageAuth = { kind: "no-access"; email: string } | { kind: "ok"; user: CurrentUser };
 
@@ -11,8 +12,14 @@ export async function requirePageIdentity(): Promise<SessionIdentity> {
   return identity;
 }
 
-export function toPageAuth(identity: SessionIdentity, profile: SessionProfile | null): PageAuth {
+/** Pages other than the change-password page send users with a temporary password there first. */
+async function enforcePasswordChange(profile: SessionProfile) {
+  if ((await currentPasswordGate(profile)) === "redirect") redirect(CHANGE_PASSWORD_PATH);
+}
+
+export async function toPageAuth(identity: SessionIdentity, profile: SessionProfile | null): Promise<PageAuth> {
   if (!profile) return { kind: "no-access", email: identity.email };
+  await enforcePasswordChange(profile);
   return { kind: "ok", user: { id: profile.id, name: profile.name, email: profile.email, role: profile.role } };
 }
 
