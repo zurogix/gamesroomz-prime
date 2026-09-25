@@ -1,7 +1,7 @@
 import { ChoiceOption, DiscoveryQuestion, DiscoverySection } from "./discoveryTypes";
 
 export const DISCOVERY_INTRO =
-  "This form helps us understand how the current game is built, so we can plan the Prime version together. There are no right or wrong answers — 'Not sure' is a useful answer when you note what needs checking. Allow approximately 1.5–2 hours for an initial response from a developer familiar with the project. Additional code investigation may take longer; record unresolved items rather than guessing. The two project files show versions and dependencies only; where something stays unclear, we may ask for specific scripts or a short walkthrough of that part.";
+  "This form helps us understand how the current game is built, so we can plan the Prime version together. There are no right or wrong answers — 'Not sure' is a useful answer when you note what needs checking. Some answers may need a look at the code; record unresolved items rather than guessing. The two project files show versions and dependencies only; where something stays unclear, we may ask for specific scripts or a short walkthrough of that part.";
 
 export const DISCOVERY_SECTIONS: DiscoverySection[] = [
   { id: "A", title: "Project snapshot", intro: "Sets the technical starting point." },
@@ -33,7 +33,7 @@ export function choices(labels: string[]): ChoiceOption[] {
 const DECIDERS = choices(["Dedicated game server", "Host phone", "Each phone for its own player", "Backend service"]);
 const GENERATION = choices(["Shared random seed", "Sent over the network", "Generated independently on each phone"]);
 
-export const NOT_SURE_TIP = "'Not sure' is fine — note what needs checking.";
+export const NOT_SURE_TIP = "'Not sure' is fine — add what you'd need to check if you can.";
 
 export const DISCOVERY_QUESTIONS: DiscoveryQuestion[] = [
   {

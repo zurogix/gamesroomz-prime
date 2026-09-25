@@ -21,11 +21,11 @@ function describeFollowUp(followUp: FollowUp, answer: FollowUpAnswer | undefined
   return text === EMPTY ? null : text;
 }
 
-/** An open answer: the text, or "Not sure yet" with what needs checking. */
+/** An open answer: the text, or "Not sure yet" plus what would need checking when given. */
 export function describeOpen(a: QuestionAnswer): string {
   if (a.text.trim()) return a.text.trim();
-  if (a.notSureYet) return `Not sure yet — what needs checking: ${a.needsChecking.trim() || EMPTY}`;
-  return EMPTY;
+  if (!a.notSureYet) return EMPTY;
+  return a.needsChecking.trim() ? `Not sure yet — would need to check: ${a.needsChecking.trim()}` : "Not sure yet";
 }
 
 /** The answer on one line (rows joined with " | "), e.g. for comparing developers side by side. */
@@ -37,7 +37,7 @@ export function answerSummary(q: DiscoveryQuestion, a: QuestionAnswer): string {
 
 export type AnswerDetail = { label: string; value: string };
 
-/** Follow-ups, evidence, basis and what would confirm it — only the parts that were filled in. */
+/** Follow-ups, evidence, basis and how it could be checked — only the parts that were filled in. */
 export function answerDetails(q: DiscoveryQuestion, a: QuestionAnswer): AnswerDetail[] {
   const followUps = (q.followUps ?? [])
     .filter((f) => followUpVisible(f, a))
@@ -47,6 +47,6 @@ export function answerDetails(q: DiscoveryQuestion, a: QuestionAnswer): AnswerDe
     ...followUps,
     { label: "Evidence", value: a.evidence.trim() },
     { label: "Basis", value: basis },
-    { label: "What would confirm it", value: needsConfirmation(a) ? a.confirmBy.trim() : "" },
+    { label: "How could this be checked", value: needsConfirmation(a) ? a.confirmBy.trim() : "" },
   ].filter((d) => d.value);
 }

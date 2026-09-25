@@ -1,6 +1,6 @@
 import { answerDetails, answerSummary, describeChoice, describeOpen, EMPTY } from "./answerText";
 import { DISCOVERY_QUESTIONS, DISCOVERY_SECTIONS, PROJECT_FILES } from "./discovery";
-import { AnswerMap, answerFor, isAnswered, isNotSure } from "./discoveryAnswers";
+import { AnswerMap, answerFor, discoveryAttention, isAnswered, isNotSure } from "./discoveryAnswers";
 import { DiscoveryQuestion, QuestionAnswer } from "./discoveryTypes";
 import { DISCOVERY_STATUS_LABEL, DiscoveryStatus } from "./responses";
 import { AssessmentState } from "./types";
@@ -41,15 +41,19 @@ function multiBlock(q: DiscoveryQuestion, responses: ExportResponse[]): string[]
   return [...questionHeading(q), ...lines, ""];
 }
 
+/** Why a question is an open item: Not sure, Assumption or Needs investigation (as in the rail), or not answered. */
+function openReason(q: DiscoveryQuestion, answers: AnswerMap): string | null {
+  const attention = discoveryAttention(answers).find((item) => item.question.id === q.id);
+  if (attention) return attention.reason;
+  return isAnswered(q, answerFor(answers, q.id)) ? null : "not answered";
+}
+
 function openItems(responses: ExportResponse[]): string[] {
   const named = responses.length > 1;
   return DISCOVERY_QUESTIONS.flatMap((q) =>
     responses.flatMap((r) => {
-      const a = answerFor(r.answers, q.id);
-      const who = named ? ` — ${r.name}` : "";
-      if (isNotSure(q, a)) return [`- ${q.id} · ${q.prompt}${who} (Not sure)`];
-      if (!isAnswered(q, a)) return [`- ${q.id} · ${q.prompt}${who} (not answered)`];
-      return [];
+      const reason = openReason(q, r.answers);
+      return reason ? [`- ${q.id} · ${q.prompt}${named ? ` — ${r.name}` : ""} (${reason})`] : [];
     }),
   );
 }
@@ -66,7 +70,8 @@ function sectionLines(responses: ExportResponse[]): string[] {
 }
 
 /**
- * The discovery record as Markdown, in question order, ending with open items. With one response (a
+ * The discovery record as Markdown, in question order, ending with open items (Not sure, Assumption,
+ * Needs investigation) and unanswered questions. With one response (a
  * developer's own export) each question shows the full answer; with several (product), every developer's
  * answer is listed under each question.
  */
@@ -83,7 +88,7 @@ export function buildDiscoveryMarkdown(state: AssessmentState, responses: Export
     `- Answers from: ${responses.map(byLine).join(", ") || EMPTY}`,
     "",
     ...(responses.length ? sectionLines(responses) : [NO_RESPONSES, ""]),
-    "## Unanswered / Not sure",
+    "## Open items",
     ...(open.length ? open : ["- None"]),
     "",
   ].join("\n");

@@ -64,7 +64,8 @@ describe("answered logic", () => {
   it("open questions need text, or Not sure yet with what needs checking", () => {
     expect(isAnswered(question("C6"), answer({ text: "  " }))).toBe(false);
     expect(isAnswered(question("C6"), answer({ text: "AttackManager decides" }))).toBe(true);
-    expect(isAnswered(question("C6"), answer({ notSureYet: true }))).toBe(false);
+    // "Not sure yet" counts as an answer on its own; the note is optional.
+    expect(isAnswered(question("C6"), answer({ notSureYet: true }))).toBe(true);
     expect(isAnswered(question("C6"), answer({ notSureYet: true, needsChecking: "Read AttackManager" }))).toBe(true);
   });
 });
@@ -85,14 +86,27 @@ describe("Markdown export", () => {
     expect(md).toContain("**Answer:** 2021");
     expect(md).toContain("Other: Nakama");
     expect(md).toContain("- Basis: Assumption");
-    expect(md).toContain("- What would confirm it: Open the project");
+    expect(md).toContain("- How could this be checked: Open the project");
+    expect(md).not.toContain("What would confirm it");
   });
 
-  it("ends with the unanswered and Not sure list", () => {
-    const tail = md.slice(md.indexOf("## Unanswered / Not sure"));
+  it("ends with the open items: Not sure, Assumption / Needs investigation, and unanswered", () => {
+    const tail = md.slice(md.indexOf("## Open items"));
 
+    expect(md).not.toContain("Unanswered / Not sure");
     expect(tail).toContain("- C2 · On each phone, how is the opponent's board produced? (Not sure)");
+    expect(tail).toContain("- A1 · Unity version? (Assumption)");
     expect(tail).toContain("- I4 · What information from us would help you estimate with more confidence? (not answered)");
-    expect(tail).not.toContain("- A1 ·");
+    expect(tail).not.toContain("- A2 ·");
+  });
+
+  it("shows 'Not sure yet' on open questions, with the note only when given", () => {
+    const open = DISCOVERY_QUESTIONS.find((q) => q.type === "open")!;
+    const exportWith = (a: ReturnType<typeof answer>) =>
+      buildDiscoveryMarkdown(initialAssessment(), [{ name: "Alex", status: "submitted", answers: { [open.id]: a } }]);
+    const block = (text: string) => text.slice(text.indexOf(`### ${open.id} · `)).split("\n### ")[0];
+
+    expect(block(exportWith(answer({ notSureYet: true })))).toContain("\nNot sure yet\n");
+    expect(block(exportWith(answer({ notSureYet: true, needsChecking: "Read AttackManager" })))).toContain("Not sure yet — would need to check: Read AttackManager");
   });
 });

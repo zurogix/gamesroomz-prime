@@ -25,7 +25,7 @@ export default function OpenAnswer({ id, answer, labelledBy, onChange }: Props) 
       </label>
       {answer.notSureYet && (
         <div className="field">
-          <label htmlFor={`${id}-checking`}>What needs checking?</label>
+          <label htmlFor={`${id}-checking`}>What would you need to check? (optional)</label>
           <input type="text" id={`${id}-checking`} value={answer.needsChecking} onChange={(e) => onChange({ needsChecking: e.target.value })} />
         </div>
       )}

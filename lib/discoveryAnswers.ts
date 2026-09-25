@@ -67,7 +67,8 @@ export function answerFor(answers: AnswerMap, id: string): QuestionAnswer {
 const hasChoice = (c: ChoiceAnswer | undefined) => Boolean(c && c.selected.length > 0);
 
 export function isAnswered(q: DiscoveryQuestion, a: QuestionAnswer): boolean {
-  if (q.type === "open") return Boolean(a.text.trim()) || (a.notSureYet && Boolean(a.needsChecking.trim()));
+  // "Not sure yet" is an answer on its own; what needs checking is optional.
+  if (q.type === "open") return Boolean(a.text.trim()) || a.notSureYet;
   if (q.type === "rows") return q.rows.every((row) => hasChoice(a.rows[row.id]));
   return hasChoice(a.choice);
 }

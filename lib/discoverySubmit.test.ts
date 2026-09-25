@@ -28,11 +28,12 @@ describe("submitting discovery", () => {
     expect(unansweredQuestions(answers).map((q) => q.id)).toEqual([DISCOVERY_QUESTIONS[5].id]);
   });
 
-  it("does not count 'Not sure yet' without what needs checking", () => {
-    const open = DISCOVERY_QUESTIONS.find((q) => q.type === "open")!;
-    const answers = { ...allAnswered(), [open.id]: { ...emptyAnswer(), notSureYet: true } };
+  it("counts 'Not sure yet' without a note as answered (client and server rule)", () => {
+    const openIds = DISCOVERY_QUESTIONS.filter((q) => q.type === "open").map((q) => q.id);
+    const answers = { ...allAnswered(), ...Object.fromEntries(openIds.map((id) => [id, { ...emptyAnswer(), notSureYet: true }])) };
 
-    expect(canSubmitDiscovery(answers)).toBe(false);
+    expect(canSubmitDiscovery(answers)).toBe(true);
+    expect(submitResponseRefusal({ id: "dev-1", role: "developer" }, { profileId: "dev-1", status: "in-progress", answers }, "discovery")).toBeNull();
   });
 
   it("is allowed when every question is answered or Not sure; evidence and basis stay optional", () => {

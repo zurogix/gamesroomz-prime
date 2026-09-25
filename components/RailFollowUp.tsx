@@ -3,6 +3,9 @@ import { AnswerMap, discoveryAttention } from "@/lib/discoveryAnswers";
 
 type Props = { answers: AnswerMap; onJumpToQuestion: (id: string) => void };
 
+export const OPEN_ITEMS_NOTE =
+  "Answers marked 'Not sure', 'Assumption' or 'Needs investigation'. You can still submit — these will be discussed together.";
+
 const PREVIEW_LENGTH = 64;
 const tone = { "--c": "var(--warn)" } as CSSProperties;
 
@@ -14,7 +17,8 @@ export default function RailFollowUp({ answers, onJumpToQuestion }: Props) {
   const attention = discoveryAttention(answers);
   return (
     <section>
-      <span className="label">To follow up · {attention.length}</span>
+      <span className="label">Open items · {attention.length}</span>
+      <p className="rail-note">{OPEN_ITEMS_NOTE}</p>
       <div className="att">
         {attention.length === 0 && <span className="hint">Nothing noted yet.</span>}
         {attention.map(({ question, reason }) => (

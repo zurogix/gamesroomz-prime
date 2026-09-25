@@ -27,8 +27,14 @@ export default function BasisField({ id, answer, onChange }: Props) {
       </div>
       {needsConfirmation(answer) && (
         <div className="field">
-          <label htmlFor={`${id}-confirm`}>What would confirm it?</label>
-          <input type="text" id={`${id}-confirm`} value={answer.confirmBy} onChange={(e) => onChange({ confirmBy: e.target.value })} />
+          <label htmlFor={`${id}-confirm`}>How could this be checked?</label>
+          <input
+            type="text"
+            id={`${id}-confirm`}
+            placeholder="e.g. search the code for X, or try Y in the editor"
+            value={answer.confirmBy}
+            onChange={(e) => onChange({ confirmBy: e.target.value })}
+          />
         </div>
       )}
     </div>
