@@ -4,11 +4,10 @@ import SavedIndicator from "./SavedIndicator";
 type Props = {
   title: string;
   crumb: ReactNode;
-  savedAt: number | null;
   actions?: ReactNode;
 };
 
-export default function PageHeader({ title, crumb, savedAt, actions }: Props) {
+export default function PageHeader({ title, crumb, actions }: Props) {
   return (
     <header className="top">
       <div>
@@ -16,7 +15,7 @@ export default function PageHeader({ title, crumb, savedAt, actions }: Props) {
         <h1>{title}</h1>
       </div>
       <div className="top-actions">
-        <SavedIndicator savedAt={savedAt} />
+        <SavedIndicator />
         {actions}
       </div>
     </header>

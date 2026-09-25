@@ -1,0 +1,100 @@
+// All portal tables live in the dedicated "prime" Postgres schema on Supabase.
+// Every model is soft-deleted via deletedAt; application reads filter deletedAt IS NULL.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  schemas   = ["prime"]
+}
+
+enum Role {
+  product
+  developer
+
+  @@schema("prime")
+}
+
+enum AssessmentStatus {
+  draft
+  assessment_complete @map("assessment-complete")
+  planning
+  submitted
+  changes_requested   @map("changes-requested")
+  agreed
+
+  @@schema("prime")
+}
+
+model Profile {
+  /// Same id as the Supabase auth user.
+  id        String    @id @db.Uuid
+  email     String    @unique
+  name      String
+  role      Role
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  gamesCreated       Game[]               @relation("GameCreatedBy")
+  assessmentsUpdated Assessment[]         @relation("AssessmentUpdatedBy")
+  snapshotsCreated   AssessmentSnapshot[] @relation("SnapshotCreatedBy")
+
+  @@schema("prime")
+}
+
+model Game {
+  id          String    @id @default(uuid()) @db.Uuid
+  name        String
+  createdById String    @db.Uuid
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  createdBy  Profile     @relation("GameCreatedBy", fields: [createdById], references: [id])
+  assessment Assessment?
+
+  @@index([deletedAt])
+  @@schema("prime")
+}
+
+model Assessment {
+  id          String           @id @default(uuid()) @db.Uuid
+  gameId      String           @unique @db.Uuid
+  state       Json
+  status      AssessmentStatus @default(draft)
+  /// Optimistic locking: a save must send the version it was based on.
+  version     Int              @default(1)
+  updatedById String           @db.Uuid
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  deletedAt   DateTime?
+
+  game      Game                 @relation(fields: [gameId], references: [id])
+  updatedBy Profile              @relation("AssessmentUpdatedBy", fields: [updatedById], references: [id])
+  snapshots AssessmentSnapshot[]
+
+  @@schema("prime")
+}
+
+model AssessmentSnapshot {
+  id           String           @id @default(uuid()) @db.Uuid
+  assessmentId String           @db.Uuid
+  status       AssessmentStatus
+  state        Json
+  createdById  String           @db.Uuid
+  note         String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  deletedAt    DateTime?
+
+  assessment Assessment @relation(fields: [assessmentId], references: [id])
+  createdBy  Profile    @relation("SnapshotCreatedBy", fields: [createdById], references: [id])
+
+  @@index([assessmentId, createdAt])
+  @@schema("prime")
+}

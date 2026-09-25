@@ -12,7 +12,6 @@ type SortKey = "title" | "classification" | "risk" | "scopeType" | "personDays" 
 
 type Props = {
   state: AssessmentState;
-  savedAt: number | null;
   onOpen: (id: string) => void;
   onEngineChange: (patch: Partial<MultiplayerEngineAssessment>) => void;
   onEngineOptionChange: (option: "sharedCore" | "separatePrime", patch: Partial<EngineOptionEstimate>) => void;
@@ -42,7 +41,7 @@ function sortValue(w: Workstream, key: SortKey): string | number {
   return w[key];
 }
 
-export default function PlanView({ state, savedAt, onOpen, onEngineChange, onEngineOptionChange, onNavigate }: Props) {
+export default function PlanView({ state, onOpen, onEngineChange, onEngineOptionChange, onNavigate }: Props) {
   const [sort, setSort] = useState<{ key: SortKey | null; dir: number }>({ key: null, dir: 1 });
   const [grouped, setGrouped] = useState(false);
 
@@ -57,7 +56,7 @@ export default function PlanView({ state, savedAt, onOpen, onEngineChange, onEng
 
   return (
     <>
-      <PageHeader title="Conversion Plan" crumb={crumb} savedAt={savedAt} />
+      <PageHeader title="Conversion Plan" crumb={crumb} />
       <div className="content">
         <div className="toolbar">
           <div className="seg" role="group" aria-label="Grouping">

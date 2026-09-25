@@ -1,4 +1,4 @@
-import { CSSProperties } from "react";
+import { CSSProperties, ReactNode } from "react";
 import { deriveFindings, planCoverage, totalPlanDays } from "@/lib/assessment";
 import { discoveryCoverage } from "@/lib/discoveryAnswers";
 import { describeModes } from "@/lib/primeTargets";
@@ -15,13 +15,14 @@ import ScopeProfileCard from "./ScopeProfileCard";
 
 type Props = {
   state: AssessmentState;
-  savedAt: number | null;
   onOpenWorkstream: (id: string) => void;
   onStatus: (status: AssessmentState["status"]) => void;
   onToggleCheck: (index: number) => void;
+  allowedStatuses: AssessmentState["status"][];
+  historySlot?: ReactNode;
 };
 
-export default function SummaryView({ state, savedAt, onOpenWorkstream, onStatus, onToggleCheck }: Props) {
+export default function SummaryView({ state, onOpenWorkstream, onStatus, onToggleCheck, allowedStatuses, historySlot }: Props) {
   const profile = scopeProfile(state.plan);
   const modes = describeModes(state.primeTargets);
   const total = totalPlanDays(state);
@@ -39,7 +40,7 @@ export default function SummaryView({ state, savedAt, onOpenWorkstream, onStatus
 
   return (
     <>
-      <PageHeader title="Management Summary" crumb={<>Report <span>·</span> Prepared for a shared scope agreement</>} savedAt={savedAt} actions={actions} />
+      <PageHeader title="Management Summary" crumb={<>Report <span>·</span> Prepared for a shared scope agreement</>} actions={actions} />
       <div className="content">
         <section className="report-head">
           <div>
@@ -82,7 +83,7 @@ export default function SummaryView({ state, savedAt, onOpenWorkstream, onStatus
               <span className="hint">All planned work is currently marked as required for Prime. Mark optional work as Enhancement in the plan to show it separately.</span>
             )}
             <h2 className="subhead">Agreement status</h2>
-            <AgreementTimeline status={state.status} onChange={onStatus} />
+            <AgreementTimeline status={state.status} onChange={onStatus} allowed={allowedStatuses} />
           </section>
         </div>
 
@@ -114,6 +115,7 @@ export default function SummaryView({ state, savedAt, onOpenWorkstream, onStatus
           </div>
           <span className="hint">{confirmed} of {CONFIRMATIONS.length} confirmed · saved with the draft</span>
         </section>
+        {historySlot}
       </div>
     </>
   );

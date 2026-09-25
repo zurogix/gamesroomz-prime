@@ -7,6 +7,7 @@ import { AssessmentState } from "@/lib/types";
 import { ThemeChoice } from "@/hooks/useTheme";
 import ProgressRing from "./ProgressRing";
 import SidebarSectionItem from "./SidebarSectionItem";
+import UserBadge, { CurrentUser } from "./UserBadge";
 
 type Props = {
   state: AssessmentState;
@@ -15,12 +16,12 @@ type Props = {
   onNavigate: (view: string) => void;
   onOpenPalette: () => void;
   onTheme: (theme: ThemeChoice) => void;
-  onReset: () => void;
+  user: CurrentUser;
 };
 
 const THEMES: ThemeChoice[] = ["light", "system", "dark"];
 
-export default function Sidebar({ state, active, theme, onNavigate, onOpenPalette, onTheme, onReset }: Props) {
+export default function Sidebar({ state, active, theme, user, onNavigate, onOpenPalette, onTheme }: Props) {
   useEffect(() => {
     document.querySelector(".nav-item.on")?.scrollIntoView({ block: "nearest", inline: "nearest" });
   }, [active]);
@@ -43,6 +44,8 @@ export default function Sidebar({ state, active, theme, onNavigate, onOpenPalett
           <small>{state.gameInfo.gameName || "Untitled game"}</small>
         </div>
       </div>
+      <UserBadge user={user} />
+      <a className="back-link" href="/">← All games</a>
       <button type="button" className="search-btn" onClick={onOpenPalette}>
         Jump to… <kbd>⌘K</kbd>
       </button>
@@ -65,7 +68,6 @@ export default function Sidebar({ state, active, theme, onNavigate, onOpenPalett
             </button>
           ))}
         </div>
-        <button type="button" className="btn quiet reset-btn" onClick={onReset}>Reset assessment</button>
       </div>
     </aside>
   );

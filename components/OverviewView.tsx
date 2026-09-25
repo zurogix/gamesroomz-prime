@@ -7,10 +7,10 @@ import PrimeTargetsCard from "./PrimeTargetsCard";
 
 type Props = {
   state: AssessmentState;
-  savedAt: number | null;
   onGameInfo: (key: keyof GameInfo, value: string) => void;
   onPrimeTargets: (patch: Partial<PrimeTargets>) => void;
   onNavigate: (view: string) => void;
+  canEditTargets: boolean;
 };
 
 const STEPS = [
@@ -27,7 +27,7 @@ const GAME_FIELDS: { key: keyof GameInfo; label: string; placeholder?: string }[
   { key: "currentAndroidApi", label: "Current Android API / SDK", placeholder: "If known" },
 ];
 
-export default function OverviewView({ state, savedAt, onGameInfo, onPrimeTargets, onNavigate }: Props) {
+export default function OverviewView({ state, onGameInfo, onPrimeTargets, onNavigate, canEditTargets }: Props) {
   const next = DISCOVERY_SECTIONS.find((s) => {
     const { done, total } = sectionProgress(state.answers, s.id);
     return done < total;
@@ -43,7 +43,7 @@ export default function OverviewView({ state, savedAt, onGameInfo, onPrimeTarget
 
   return (
     <>
-      <PageHeader title="Overview" crumb={`${state.gameInfo.gameName || "Untitled game"} → Gamesroomz Prime`} savedAt={savedAt} />
+      <PageHeader title="Overview" crumb={`${state.gameInfo.gameName || "Untitled game"} → Gamesroomz Prime`} />
       <div className="content">
         {next && nextProgress && (
           <div className="resume">
@@ -71,7 +71,7 @@ export default function OverviewView({ state, savedAt, onGameInfo, onPrimeTarget
           </ol>
         </section>
 
-        <PrimeTargetsCard targets={state.primeTargets} onChange={onPrimeTargets} />
+        <PrimeTargetsCard targets={state.primeTargets} onChange={onPrimeTargets} readOnly={!canEditTargets} />
 
         <section className="card">
           <span className="label">Game information</span>
@@ -79,7 +79,15 @@ export default function OverviewView({ state, savedAt, onGameInfo, onPrimeTarget
             {GAME_FIELDS.map((f) => (
               <div className="field" key={f.key}>
                 <label htmlFor={`gi-${f.key}`}>{f.label}</label>
-                <input type="text" id={`gi-${f.key}`} value={state.gameInfo[f.key]} placeholder={f.placeholder} onChange={(e) => onGameInfo(f.key, e.target.value)} />
+                <input
+                  type="text"
+                  id={`gi-${f.key}`}
+                  value={state.gameInfo[f.key]}
+                  placeholder={f.placeholder}
+                  readOnly={f.key === "gameName"}
+                  title={f.key === "gameName" ? "Rename the game from the games list" : undefined}
+                  onChange={(e) => onGameInfo(f.key, e.target.value)}
+                />
               </div>
             ))}
           </div>

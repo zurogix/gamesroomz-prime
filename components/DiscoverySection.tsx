@@ -16,13 +16,12 @@ import SectionTipsBox from "./SectionTipsBox";
 type Props = {
   state: AssessmentState;
   sectionTitle: string;
-  savedAt: number | null;
   focusId: string | null;
   onAnswer: (id: string, update: (answer: QuestionAnswer) => QuestionAnswer) => void;
   onNavigate: (view: string) => void;
 };
 
-export default function DiscoverySection({ state, sectionTitle, savedAt, focusId, onAnswer, onNavigate }: Props) {
+export default function DiscoverySection({ state, sectionTitle, focusId, onAnswer, onNavigate }: Props) {
   const index = DISCOVERY_SECTIONS.findIndex((s) => s.title === sectionTitle);
   const section = DISCOVERY_SECTIONS[index];
   const questions = DISCOVERY_QUESTIONS.filter((q) => q.section === section.id);
@@ -39,7 +38,7 @@ export default function DiscoverySection({ state, sectionTitle, savedAt, focusId
 
   return (
     <>
-      <PageHeader title={`${section.id} · ${section.title}`} crumb={crumb} savedAt={savedAt} actions={<ExportMenu state={state} />} />
+      <PageHeader title={`${section.id} · ${section.title}`} crumb={crumb} actions={<ExportMenu state={state} />} />
       <div className="content">
         {index === 0 && <p className="discovery-intro">{DISCOVERY_INTRO}</p>}
         <SectionTipsBox section={section} />
@@ -55,7 +54,7 @@ export default function DiscoverySection({ state, sectionTitle, savedAt, focusId
           ))}
         </div>
         <div className="pager">
-          <span className="hint">Answers save automatically in this browser.</span>
+          <span className="hint">Answers save automatically.</span>
           <div className="pager-actions">
             <button type="button" className="btn" onClick={() => onNavigate(prev)}>← {prev}</button>
             <button type="button" className="btn primary" onClick={() => onNavigate(next)}>{next} →</button>
