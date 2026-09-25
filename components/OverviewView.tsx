@@ -1,6 +1,7 @@
 import { DISCOVERY_QUESTIONS, DISCOVERY_SECTIONS } from "@/lib/discovery";
-import { answerFor, isAnswered, sectionProgress } from "@/lib/discoveryAnswers";
+import { AnswerMap, answerFor, isAnswered, sectionProgress } from "@/lib/discoveryAnswers";
 import { Role } from "@/lib/permissions";
+import type { DiscoveryStatus } from "@/lib/responses";
 import { Stage } from "@/lib/stages";
 import { AssessmentState, GameInfo } from "@/lib/types";
 import GameInfoLine from "./GameInfoLine";
@@ -9,6 +10,10 @@ import NextStepCard from "./stages/NextStepCard";
 
 type Props = {
   state: AssessmentState;
+  /** The developer's own answers (used for "Continue with section …"). */
+  answers: AnswerMap;
+  /** The developer's own discovery status (none for product). */
+  ownDiscovery?: DiscoveryStatus;
   role: Role;
   onGameInfo: (key: keyof GameInfo, value: string) => void;
   onNavigate: (view: string) => void;
@@ -17,13 +22,13 @@ type Props = {
   canEditAnswers: boolean;
 };
 
-export default function OverviewView({ state, role, onGameInfo, onNavigate, onOpenStage, canEditTeam, canEditAnswers }: Props) {
+export default function OverviewView({ state, answers, ownDiscovery, role, onGameInfo, onNavigate, onOpenStage, canEditTeam, canEditAnswers }: Props) {
   const next = DISCOVERY_SECTIONS.find((s) => {
-    const { done, total } = sectionProgress(state.answers, s.id);
+    const { done, total } = sectionProgress(answers, s.id);
     return done < total;
   });
-  const nextProgress = next ? sectionProgress(state.answers, next.id) : null;
-  const remaining = DISCOVERY_QUESTIONS.filter((q) => !isAnswered(q, answerFor(state.answers, q.id))).length;
+  const nextProgress = next ? sectionProgress(answers, next.id) : null;
+  const remaining = DISCOVERY_QUESTIONS.filter((q) => !isAnswered(q, answerFor(answers, q.id))).length;
   // Once started, the developer can pick up where they left off; the Next step card covers the first visit.
   const showResume = canEditAnswers && role === "developer" && remaining < DISCOVERY_QUESTIONS.length;
 
@@ -32,7 +37,7 @@ export default function OverviewView({ state, role, onGameInfo, onNavigate, onOp
       <PageHeader title="Overview" crumb={`${state.gameInfo.gameName || "Untitled game"} → Gamesroomz Prime`} />
       <div className="content">
         <GameInfoLine gameInfo={state.gameInfo} onDeveloper={(developer) => onGameInfo("developer", developer)} canEdit={canEditTeam} />
-        <NextStepCard role={role} status={state.status} onOpen={onOpenStage} />
+        <NextStepCard role={role} status={state.status} ownDiscovery={ownDiscovery} onOpen={onOpenStage} />
         {showResume && next && nextProgress && (
           <div className="card resume-inline">
             <div>

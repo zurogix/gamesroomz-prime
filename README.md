@@ -76,21 +76,25 @@ Each game has one assessment, stored as JSON in Postgres with an optimistic-lock
 first, the portal stops autosaving and asks you to reload instead of overwriting. Every status change saves a
 version that can be exported as Markdown from the Management Summary. Deletes are soft (`deletedAt`).
 
-Roles: **product** can change everything at any stage. **Developers** can edit
-discovery answers and the developer / team only while discovery is in progress, the engine comparison while findings
+Discovery answers are not part of the assessment: each developer has their own **discovery response** per game
+(`DiscoveryResponse`, one active row per game and developer), saved with its own version and submitted on its own.
+Developers only ever see their own answers; the product team can read everyone's but never edit them, and can reopen
+a submitted response or remove one (soft delete — the developer then starts with a blank form).
+
+Roles: **product** can change the shared assessment at any stage. **Developers** can edit
+their own discovery answers (until they submit, and only while the game is in discovery), the developer / team only
+while discovery is in progress, the engine comparison while findings
 or the plan are open, and the plan and its confirmations only while the plan is in progress. The save API rejects
 anything else with 403.
-
-A draft saved in the browser by the earlier, local-only version can be imported from the games list after signing in.
 
 ## Conversion workflow
 
 Four stages, shown as a progress line at the top of each game ("Step 1: Discovery"):
 
-1. **Discovery (A–I)** — the product team creates the developer's account; the developer answers the discovery form and
-   submits it (Discovery in progress → Discovery submitted — under review). Every question needs an answer first —
-   "Not sure" counts — and the save API refuses the submission otherwise. Product then publishes findings or
-   reopens discovery for follow-up questions.
+1. **Discovery (A–I)** — the product team creates the developers' accounts; each developer answers the discovery form
+   and submits their own response. Every question needs an answer first — "Not sure" counts — and the API refuses the
+   submission otherwise. Product can reopen a developer's response for follow-up questions, and publishes findings
+   once at least one developer has submitted.
 2. **Findings & options** — product publishes findings; the developer responds, including the Multiplayer Engine 2.0
    comparison. Product then opens the plan (Findings & options — open for comments → Conversion plan in progress).
 3. **Conversion plan** — pre-filled workstreams the developer confirms or edits, then submits with the confirmations

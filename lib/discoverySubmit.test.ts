@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { DISCOVERY_QUESTIONS, DISCOVERY_SECTIONS } from "./discovery";
-import { canSubmitDiscovery, emptyAnswer, NOT_SURE_ID, unansweredQuestions } from "./discoveryAnswers";
+import { AnswerMap, canSubmitDiscovery, emptyAnswer, NOT_SURE_ID, unansweredQuestions } from "./discoveryAnswers";
 import { DiscoveryQuestion, QuestionAnswer } from "./discoveryTypes";
 import { OVERVIEW } from "./sections";
 import { PRODUCT_SUBMIT_NOTE, sectionNav } from "./sectionNav";
-import { transitionRequirementError, UNANSWERED_ERROR } from "./stageActions";
+import { PUBLISH_NEEDS_SUBMISSION, submitResponseRefusal, UNANSWERED_ERROR } from "./responses";
+import { transitionRequirementError } from "./stageActions";
 import { initialAssessment } from "./assessment";
 
 /** "Not sure" for every question: choices pick Not sure, open questions use "Not sure yet" + what needs checking. */
@@ -38,13 +39,25 @@ describe("submitting discovery", () => {
     expect(canSubmitDiscovery(allAnswered())).toBe(true);
   });
 
-  it("is enforced for the discovery → discovery-submitted transition only", () => {
-    const empty = { ...initialAssessment(), status: "discovery-submitted" as const };
-    const complete = { ...empty, answers: allAnswered() };
+  it("is enforced for the developer's own response on the server", () => {
+    const developer = { id: "dev-1", role: "developer" as const };
+    const own = (answers: AnswerMap) => ({ profileId: "dev-1", status: "in-progress" as const, answers });
 
-    expect(transitionRequirementError("discovery", empty)).toBe(UNANSWERED_ERROR);
-    expect(transitionRequirementError("discovery", complete)).toBeNull();
-    expect(transitionRequirementError("discovery-submitted", { ...empty, status: "discovery" })).toBeNull();
+    expect(submitResponseRefusal(developer, own({}), "discovery")).toEqual({ status: 400, error: UNANSWERED_ERROR });
+    expect(submitResponseRefusal(developer, own(allAnswered()), "discovery")).toBeNull();
+  });
+});
+
+describe("publishing findings", () => {
+  const publishing = { ...initialAssessment(), status: "findings" as const };
+
+  it("needs at least one developer's submitted discovery", () => {
+    expect(transitionRequirementError("discovery", publishing, { submittedResponses: 0 })).toBe(PUBLISH_NEEDS_SUBMISSION);
+    expect(transitionRequirementError("discovery", publishing, { submittedResponses: 1 })).toBeNull();
+  });
+
+  it("does not affect other transitions", () => {
+    expect(transitionRequirementError("findings", { ...publishing, status: "plan" }, { submittedResponses: 0 })).toBeNull();
   });
 });
 

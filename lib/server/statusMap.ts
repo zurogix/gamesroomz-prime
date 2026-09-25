@@ -3,7 +3,6 @@ import type { AssessmentStatus } from "@/lib/types";
 
 const TO_DB: Record<AssessmentStatus, DbStatus> = {
   discovery: DbStatus.discovery,
-  "discovery-submitted": DbStatus.discovery_submitted,
   findings: DbStatus.findings,
   plan: DbStatus.plan,
   "plan-submitted": DbStatus.plan_submitted,

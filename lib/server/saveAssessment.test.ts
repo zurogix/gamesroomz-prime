@@ -1,12 +1,15 @@
 import { AssessmentStatus as DbStatus } from "@prisma/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { initialAssessment } from "@/lib/assessment";
+import { PUBLISH_NEEDS_SUBMISSION } from "@/lib/responses";
+import { ANSWERS_NOT_IN_ASSESSMENT, saveAssessmentSchema } from "@/lib/schemas/api";
 import type { AssessmentState } from "@/lib/types";
 import type { SessionProfile } from "./auth";
 
 const findFirst = vi.fn();
+const count = vi.fn();
 const transaction = vi.fn();
-vi.mock("./db", () => ({ db: { assessment: { findFirst }, $transaction: transaction } }));
+vi.mock("./db", () => ({ db: { assessment: { findFirst }, discoveryResponse: { count }, $transaction: transaction } }));
 
 const { saveAssessment } = await import("./saveAssessment");
 
@@ -18,27 +21,12 @@ function storedRow(status: DbStatus, state: AssessmentState = initialAssessment(
   return { id: "a-1", version: 3, status, state: { ...state, status: "discovery" }, game: { name: "Bubble" } };
 }
 
-const withAnswer = (s: AssessmentState): AssessmentState => ({ ...s, answers: { A1: { ...answer(), text: "2021.3" } } });
 const withPlanEdit = (s: AssessmentState): AssessmentState => ({ ...s, plan: s.plan.map((w, i) => (i === 0 ? { ...w, whyChange: "Old Unity" } : w)) });
-
-function answer() {
-  return { choice: { selected: [], other: "" }, rows: {}, text: "", notSureYet: false, needsChecking: "", followUps: {}, evidence: "", basis: "" as const, confirmBy: "", files: {} };
-}
+const withTeam = (s: AssessmentState): AssessmentState => ({ ...s, gameInfo: { ...s.gameInfo, developer: "Porting team" } });
 
 describe("saveAssessment", () => {
   beforeEach(() => {
-    findFirst.mockReset();
-    transaction.mockReset();
-  });
-
-  it("rejects a developer editing discovery after it was submitted (status column decides)", async () => {
-    findFirst.mockResolvedValue(storedRow(DbStatus.discovery_submitted));
-    const next = { ...withAnswer(initialAssessment()), status: "discovery-submitted" as const };
-
-    const outcome = await saveAssessment(developer, "g-1", next, 3);
-
-    expect(outcome).toEqual({ kind: "forbidden", message: "Discovery answers can only be changed while discovery is in progress." });
-    expect(transaction).not.toHaveBeenCalled();
+    [findFirst, count, transaction].forEach((fn) => fn.mockReset());
   });
 
   it("rejects a developer editing the plan before the plan is open", async () => {
@@ -52,21 +40,40 @@ describe("saveAssessment", () => {
   });
 
   it("rejects a developer publishing findings", async () => {
-    findFirst.mockResolvedValue(storedRow(DbStatus.discovery_submitted));
+    findFirst.mockResolvedValue(storedRow(DbStatus.discovery));
 
     const outcome = await saveAssessment(developer, "g-1", { ...initialAssessment(), status: "findings" }, 3);
 
     expect(outcome.kind).toBe("forbidden");
   });
 
-  it("saves an allowed change", async () => {
+  it("refuses to publish findings until at least one developer has submitted (400, nothing saved)", async () => {
+    findFirst.mockResolvedValue(storedRow(DbStatus.discovery));
+    count.mockResolvedValue(0);
+
+    const outcome = await saveAssessment(product, "g-1", { ...initialAssessment(), status: "findings" }, 3);
+
+    expect(outcome).toEqual({ kind: "invalid", message: PUBLISH_NEEDS_SUBMISSION });
+    expect(count).toHaveBeenCalledWith({ where: { gameId: "g-1", deletedAt: null, status: "submitted" } });
+    expect(transaction).not.toHaveBeenCalled();
+  });
+
+  it("publishes findings once a developer has submitted", async () => {
+    findFirst.mockResolvedValue(storedRow(DbStatus.discovery));
+    count.mockResolvedValue(1);
+    transaction.mockResolvedValue({ kind: "saved", version: 4, updatedAt: "2026-09-26T00:00:00.000Z" });
+
+    expect((await saveAssessment(product, "g-1", { ...initialAssessment(), status: "findings" }, 3)).kind).toBe("saved");
+  });
+
+  it("saves an allowed change without counting responses", async () => {
     findFirst.mockResolvedValue(storedRow(DbStatus.discovery));
     transaction.mockResolvedValue({ kind: "saved", version: 4, updatedAt: "2026-09-25T00:00:00.000Z" });
 
-    const outcome = await saveAssessment(developer, "g-1", withAnswer(initialAssessment()), 3);
+    const outcome = await saveAssessment(developer, "g-1", withTeam(initialAssessment()), 3);
 
     expect(outcome.kind).toBe("saved");
-    expect(transaction).toHaveBeenCalledOnce();
+    expect(count).not.toHaveBeenCalled();
   });
 
   it("clears the confirmations when product requests changes, whatever the client sent", async () => {
@@ -84,21 +91,20 @@ describe("saveAssessment", () => {
     expect(update.mock.calls[0][0].data.state.checks.every((c: boolean) => !c)).toBe(true);
   });
 
-  it("loads a stored state that still holds Prime targets", async () => {
-    findFirst.mockResolvedValue({ ...storedRow(DbStatus.discovery), state: { ...initialAssessment(), primeTargets: { fpsTarget: "60" } } });
+  it("loads stored states that still hold Prime targets or discovery answers", async () => {
+    findFirst.mockResolvedValue({ ...storedRow(DbStatus.discovery), state: { ...initialAssessment(), primeTargets: { fpsTarget: "60" }, answers: { A1: {} } } });
     transaction.mockResolvedValue({ kind: "saved", version: 4, updatedAt: "2026-09-25T00:00:00.000Z" });
 
-    const outcome = await saveAssessment(developer, "g-1", withAnswer(initialAssessment()), 3);
-
-    expect(outcome.kind).toBe("saved");
+    expect((await saveAssessment(developer, "g-1", withTeam(initialAssessment()), 3)).kind).toBe("saved");
   });
+});
 
-  it("rejects submitting discovery while questions are unanswered (400, nothing saved)", async () => {
-    findFirst.mockResolvedValue(storedRow(DbStatus.discovery));
+describe("assessment save body", () => {
+  it("rejects any answers field", () => {
+    const result = saveAssessmentSchema.safeParse({ state: { ...initialAssessment(), answers: {} }, version: 1 });
 
-    const outcome = await saveAssessment(developer, "g-1", { ...withAnswer(initialAssessment()), status: "discovery-submitted" }, 3);
-
-    expect(outcome).toEqual({ kind: "invalid", message: "Some questions still need an answer." });
-    expect(transaction).not.toHaveBeenCalled();
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]?.message).toBe(ANSWERS_NOT_IN_ASSESSMENT);
+    expect(saveAssessmentSchema.safeParse({ state: initialAssessment(), version: 1 }).success).toBe(true);
   });
 });

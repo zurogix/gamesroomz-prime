@@ -6,6 +6,7 @@ import type { AssessmentState } from "@/lib/types";
 import { isVersionConflict } from "@/lib/versioning";
 import type { SessionProfile } from "./auth";
 import { db } from "./db";
+import { countSubmittedResponses } from "./responses";
 import { fromDbStatus, toDbStatus } from "./statusMap";
 
 export type SaveOutcome =
@@ -33,7 +34,9 @@ export async function saveAssessment(profile: SessionProfile, gameId: string, st
   const previous = { ...hydrateAssessment(row.state as Prisma.JsonObject), status: fromDbStatus(row.status) };
   const forbidden = assessmentChangeError(profile.role, previous, state);
   if (forbidden) return { kind: "forbidden", message: forbidden };
-  const invalid = transitionRequirementError(previous.status, state);
+  const publishing = previous.status === "discovery" && state.status === "findings";
+  const submittedResponses = publishing ? await countSubmittedResponses(gameId) : 0;
+  const invalid = transitionRequirementError(previous.status, state, { submittedResponses });
   if (invalid) return { kind: "invalid", message: invalid };
 
   // Transition side effects (e.g. clearing confirmations on "Request changes") are applied here too,

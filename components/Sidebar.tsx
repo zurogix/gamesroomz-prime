@@ -1,7 +1,7 @@
 import { Fragment, useEffect } from "react";
 import { planFieldsDone, PLAN_FIELD_COUNT } from "@/lib/assessment";
 import { DISCOVERY_SECTIONS } from "@/lib/discovery";
-import { discoveryCoverage } from "@/lib/discoveryAnswers";
+import { AnswerMap, discoveryCoverage } from "@/lib/discoveryAnswers";
 import { OVERVIEW } from "@/lib/sections";
 import { Stage } from "@/lib/stages";
 import { AssessmentState } from "@/lib/types";
@@ -20,11 +20,13 @@ type Props = {
   user: CurrentUser;
   /** Only stages the workflow has reached; the others are not listed at all. */
   stages: Stage[];
+  /** The discovery answers shown (own for developers, the selected developer's for product). */
+  answers: AnswerMap;
 };
 
 const THEMES: ThemeChoice[] = ["light", "system", "dark"];
 
-export default function Sidebar({ state, active, theme, user, onNavigate, onOpenPalette, onTheme, stages }: Props) {
+export default function Sidebar({ state, active, theme, user, onNavigate, onOpenPalette, onTheme, stages, answers }: Props) {
   useEffect(() => {
     document.querySelector(".nav-item.on")?.scrollIntoView({ block: "nearest", inline: "nearest" });
   }, [active]);
@@ -39,13 +41,13 @@ export default function Sidebar({ state, active, theme, user, onNavigate, onOpen
   const groupLabel = (stage: Stage) => (
     <div className="nav-group label">
       Step {stage.number} · {stage.title}
-      {stage.id === "discovery" && ` · ${discoveryCoverage(state.answers)}%`}
+      {stage.id === "discovery" && ` · ${discoveryCoverage(answers)}%`}
     </div>
   );
   const stageItems = (stage: Stage) => {
     if (stage.id === "discovery") {
       return DISCOVERY_SECTIONS.map((s) => (
-        <SidebarSectionItem key={s.id} state={state} section={s} active={active === s.title} onNavigate={onNavigate} />
+        <SidebarSectionItem key={s.id} answers={answers} section={s} active={active === s.title} onNavigate={onNavigate} />
       ));
     }
     return navItem(stage.view, stage.id === "plan" ? [plansDone, state.plan.length] : undefined);

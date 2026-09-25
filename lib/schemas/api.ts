@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from "@/lib/password";
-import { assessmentStateSchema } from "./assessment";
+import { answersSchema, assessmentStateSchema } from "./assessment";
 
 export const idParamsSchema = z.object({ id: z.uuid() });
 
@@ -13,10 +13,27 @@ export const updateGameSchema = z.union([
   z.object({ deleted: z.literal(true) }).strict(),
 ]);
 
-export const saveAssessmentSchema = z.object({
-  state: assessmentStateSchema,
-  version: z.number().int().min(1),
+export const ANSWERS_NOT_IN_ASSESSMENT = "Discovery answers are saved per developer, not in the assessment.";
+
+/** The shared assessment never carries discovery answers; a state that still sends them is refused. */
+const withoutAnswers = z.custom<unknown>((value) => !(value && typeof value === "object" && "answers" in value), {
+  message: ANSWERS_NOT_IN_ASSESSMENT,
 });
+
+const versionSchema = z.number().int().min(1);
+
+export const saveAssessmentSchema = z.object({
+  state: withoutAnswers.pipe(assessmentStateSchema),
+  version: versionSchema,
+});
+
+export const responseParamsSchema = z.object({ id: z.uuid(), responseId: z.uuid() });
+
+/** PUT /api/games/[id]/responses/me — the developer's own answers. */
+export const saveResponseSchema = z.object({ answers: answersSchema, version: versionSchema }).strict();
+
+/** PATCH /api/games/[id]/responses/[responseId] — product removes a response (soft delete). */
+export const removeResponseSchema = z.object({ remove: z.literal(true) }).strict();
 
 export const roleSchema = z.enum(["product", "developer"]);
 

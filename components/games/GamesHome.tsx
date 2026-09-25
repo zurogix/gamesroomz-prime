@@ -6,7 +6,6 @@ import type { GameSummary } from "@/lib/server/games";
 import AppHeader from "@/components/AppHeader";
 import { CurrentUser } from "@/components/UserBadge";
 import GameRow from "./GameRow";
-import ImportDraftBanner from "./ImportDraftBanner";
 import NewGameForm from "./NewGameForm";
 
 type Props = { user: CurrentUser; initialGames: GameSummary[] };
@@ -25,7 +24,6 @@ export default function GamesHome({ user, initialGames }: Props) {
       <AppHeader user={user} />
       <main className="page-main">
         <h1>Games</h1>
-        <ImportDraftBanner user={user} games={games} onImported={refresh} />
         {canManage && <NewGameForm />}
         {games.length === 0 ? (
           <p className="hint">{canManage ? "No games yet. Create the first one above." : "No games yet. The product team will add them."}</p>

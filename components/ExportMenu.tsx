@@ -3,9 +3,10 @@
 import { useState } from "react";
 import { copyText, downloadText, exportBaseName } from "@/lib/download";
 import { buildDiscoveryMarkdown } from "@/lib/exportMarkdown";
+import { AnswerMap } from "@/lib/discoveryAnswers";
 import { AssessmentState } from "@/lib/types";
 
-export default function ExportMenu({ state }: { state: AssessmentState }) {
+export default function ExportMenu({ state, answers }: { state: AssessmentState; answers: AnswerMap }) {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
   const base = exportBaseName(state.gameInfo.gameName);
@@ -16,16 +17,16 @@ export default function ExportMenu({ state }: { state: AssessmentState }) {
   };
 
   async function copyMarkdown() {
-    const ok = await copyText(buildDiscoveryMarkdown(state));
+    const ok = await copyText(buildDiscoveryMarkdown(state, answers));
     report(ok, "Markdown copied", "Copy was blocked by the browser — use Download .md instead");
   }
 
   function downloadMarkdown() {
-    report(downloadText(`${base}.md`, buildDiscoveryMarkdown(state), "text/markdown"), "Downloaded .md", "Download failed");
+    report(downloadText(`${base}.md`, buildDiscoveryMarkdown(state, answers), "text/markdown"), "Downloaded .md", "Download failed");
   }
 
   function downloadJson() {
-    report(downloadText(`${base}.json`, JSON.stringify(state, null, 2), "application/json"), "Downloaded .json", "Download failed");
+    report(downloadText(`${base}.json`, JSON.stringify({ ...state, answers }, null, 2), "application/json"), "Downloaded .json", "Download failed");
   }
 
   return (

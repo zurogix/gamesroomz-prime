@@ -1,6 +1,6 @@
 import { CSSProperties, ReactNode } from "react";
 import { deriveFindings, planCoverage, totalPlanDays } from "@/lib/assessment";
-import { discoveryCoverage } from "@/lib/discoveryAnswers";
+import { AnswerMap } from "@/lib/discoveryAnswers";
 import { scopeProfile } from "@/lib/scopeProfile";
 import { CLASSES, CLASS_LABEL, CONFIRMATIONS, formatDays } from "@/lib/sections";
 import { statusLabel } from "@/lib/stages";
@@ -15,11 +15,15 @@ import ScopeProfileCard from "./ScopeProfileCard";
 type Props = {
   state: AssessmentState;
   onOpenWorkstream: (id: string) => void;
+  /** e.g. "2 of 3" developers submitted, or the developer's own discovery status. */
+  discoveryKpi: { value: string; detail: string };
+  /** Answers included in "Export answers". */
+  exportAnswers: AnswerMap;
   stageActions?: ReactNode;
   historySlot?: ReactNode;
 };
 
-export default function SummaryView({ state, onOpenWorkstream, stageActions, historySlot }: Props) {
+export default function SummaryView({ state, onOpenWorkstream, discoveryKpi, exportAnswers, stageActions, historySlot }: Props) {
   const profile = scopeProfile(state.plan);
   const total = totalPlanDays(state);
   const mandatory = state.plan.filter((w) => w.scopeType === "mandatory").reduce((sum, w) => sum + (Number(w.personDays) || 0), 0);
@@ -29,7 +33,7 @@ export default function SummaryView({ state, onOpenWorkstream, stageActions, his
   const confirmed = state.checks.filter(Boolean).length;
   const actions = (
     <>
-      <ExportMenu state={state} />
+      <ExportMenu state={state} answers={exportAnswers} />
       <button type="button" className="btn" onClick={() => window.print()}>Print report</button>
       {stageActions}
     </>
@@ -55,7 +59,7 @@ export default function SummaryView({ state, onOpenWorkstream, stageActions, his
 
         <div className="kpis">
           <div className="kpi"><span className="label">Planned effort</span><b className="num">{formatDays(total)}</b><small>person-days</small></div>
-          <div className="kpi"><span className="label">Discovery</span><b className="num">{discoveryCoverage(state.answers)}%</b><small>questions answered</small></div>
+          <div className="kpi"><span className="label">Discovery</span><b className="num">{discoveryKpi.value}</b><small>{discoveryKpi.detail}</small></div>
           <div className="kpi"><span className="label">Plan detail</span><b className="num">{planCoverage(state)}%</b><small>workstreams fully documented</small></div>
           <div className="kpi"><span className="label">High risk</span><b className="num">{highRisk.length}</b><small>{highRisk.length ? highRisk.map((w) => w.title).join(", ") : "none"}</small></div>
         </div>

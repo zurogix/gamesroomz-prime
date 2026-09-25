@@ -5,7 +5,6 @@ import type { AssessmentStatus } from "./types";
 /** In workflow order. The first one is the default for new and older assessments. */
 export const STATUSES: { value: AssessmentStatus; label: string }[] = [
   { value: "discovery", label: "Discovery in progress" },
-  { value: "discovery-submitted", label: "Discovery submitted — under review" },
   { value: "findings", label: "Findings & options — open for comments" },
   { value: "plan", label: "Conversion plan in progress" },
   { value: "plan-submitted", label: "Plan submitted — under review" },
@@ -47,7 +46,6 @@ export const stageById = (id: StageId) => STAGES.find((s) => s.id === id)!;
 
 const CURRENT_STAGE: Record<AssessmentStatus, StageId> = {
   discovery: "discovery",
-  "discovery-submitted": "discovery",
   findings: "findings",
   plan: "plan",
   "plan-submitted": "plan",

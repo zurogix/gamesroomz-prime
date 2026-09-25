@@ -93,6 +93,14 @@ export function sectionProgress(answers: AnswerMap, sectionId: string) {
   return { done, total: qs.length };
 }
 
+/** Saved answers for known questions only, each filled in to the current shape. */
+export function hydrateAnswers(saved: unknown): Record<string, QuestionAnswer> {
+  if (!saved || typeof saved !== "object") return {};
+  const map = saved as Record<string, Partial<QuestionAnswer> | undefined>;
+  const known = DISCOVERY_QUESTIONS.filter((q) => map[q.id]);
+  return Object.fromEntries(known.map((q) => [q.id, hydrateAnswer(map[q.id])]));
+}
+
 /** Questions without an answer under isAnswered() — "Not sure" counts as an answer. */
 export function unansweredQuestions(answers: AnswerMap): DiscoveryQuestion[] {
   return DISCOVERY_QUESTIONS.filter((q) => !isAnswered(q, answerFor(answers, q.id)));

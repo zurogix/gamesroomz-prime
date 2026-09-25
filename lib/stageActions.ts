@@ -1,5 +1,5 @@
-import { canSubmitDiscovery } from "./discoveryAnswers";
 import { allowedTransitions, Role } from "./permissions";
+import { publishFindingsRefusal } from "./responses";
 import type { AssessmentState, AssessmentStatus } from "./types";
 
 export type StageAction = {
@@ -14,23 +14,11 @@ export type StageAction = {
 type Copy = Omit<StageAction, "to">;
 
 const COPY: Record<string, Copy> = {
-  "discovery>discovery-submitted": {
-    label: "Submit discovery",
-    title: "Submit discovery?",
-    text: "Your answers become read-only while the product team reviews them.",
-    primary: true,
-  },
-  "discovery-submitted>findings": {
+  "discovery>findings": {
     label: "Publish findings",
     title: "Publish findings?",
-    text: "The developer will see the findings and options and can comment on the engine comparison.",
+    text: "Developers will see the findings and options and can comment on the engine comparison. Discovery answers can no longer be changed.",
     primary: true,
-  },
-  "discovery-submitted>discovery": {
-    label: "Reopen discovery",
-    title: "Reopen discovery?",
-    text: "The developer can edit the discovery answers again, e.g. to answer follow-up questions.",
-    primary: false,
   },
   "findings>plan": {
     label: "Options agreed — open plan",
@@ -69,16 +57,22 @@ export function stageActionsFor(role: Role, status: AssessmentStatus): StageActi
   return allowedTransitions(role, status).map((to) => ({ to, ...COPY[`${status}>${to}`] }));
 }
 
+/** A developer submitting their own discovery answers (not a game status change). */
+export const SUBMIT_DISCOVERY = {
+  label: "Submit discovery",
+  title: "Submit discovery?",
+  text: "Your answers become read-only while the product team reviews them.",
+};
+
 export const UNANSWERED_TITLE = "A few questions still need an answer";
 export const NOT_SURE_NOTE = "'Not sure' is a valid answer — it will be discussed as an open item.";
-export const UNANSWERED_ERROR = "Some questions still need an answer.";
 
-/**
- * What a status change needs from the content, beyond permissions (checked on the server too).
- * Submitting discovery needs every question answered, "Not sure" included.
- */
-export function transitionRequirementError(from: AssessmentStatus, next: AssessmentState): string | null {
-  if (from === "discovery" && next.status === "discovery-submitted" && !canSubmitDiscovery(next.answers)) return UNANSWERED_ERROR;
+/** What the game needs for a status change, beyond permissions (checked on the server too). */
+export type TransitionContext = { submittedResponses: number };
+
+/** "Publish findings" (discovery → findings) needs at least one developer's submitted discovery. */
+export function transitionRequirementError(from: AssessmentStatus, next: AssessmentState, context: TransitionContext): string | null {
+  if (from === "discovery" && next.status === "findings") return publishFindingsRefusal(context.submittedResponses);
   return null;
 }
 

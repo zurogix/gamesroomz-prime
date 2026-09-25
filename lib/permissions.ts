@@ -4,20 +4,24 @@ import type { AssessmentState, AssessmentStatus, Workstream } from "./types";
 
 export type Role = "product" | "developer";
 
-/** The parts of an assessment that are edited separately. */
-export type Area = "developerTeam" | "answers" | "engine" | "plan" | "checks";
+/**
+ * The parts of the shared assessment that are edited separately. Discovery answers are not part of it:
+ * each developer has their own response (rules in lib/responses.ts).
+ */
+export type Area = "developerTeam" | "engine" | "plan" | "checks";
 
-export const ALL_AREAS: Area[] = ["developerTeam", "answers", "engine", "plan", "checks"];
+export const ALL_AREAS: Area[] = ["developerTeam", "engine", "plan", "checks"];
 
 export const isProduct = (role: Role) => role === "product";
 
+/** Developers submit discovery per response, not as a game status change. */
 const DEVELOPER_TRANSITIONS: Partial<Record<AssessmentStatus, AssessmentStatus[]>> = {
-  discovery: ["discovery-submitted"],
   plan: ["plan-submitted"],
 };
 
+/** "Publish findings" (discovery → findings) also needs a submitted response; see publishFindingsRefusal. */
 const PRODUCT_TRANSITIONS: Partial<Record<AssessmentStatus, AssessmentStatus[]>> = {
-  "discovery-submitted": ["findings", "discovery"],
+  discovery: ["findings"],
   findings: ["plan"],
   "plan-submitted": ["agreed", "plan"],
   agreed: ["plan"],
@@ -30,8 +34,7 @@ export function allowedTransitions(role: Role, from: AssessmentStatus): Assessme
 }
 
 const DEVELOPER_AREAS: Record<AssessmentStatus, Area[]> = {
-  discovery: ["answers", "developerTeam"],
-  "discovery-submitted": [],
+  discovery: ["developerTeam"],
   findings: ["engine"],
   plan: ["engine", "plan", "checks"],
   "plan-submitted": [],
@@ -71,7 +74,6 @@ function planWithoutDerived(plan: Workstream[]) {
 
 const AREA_VALUE: Record<Area, (s: AssessmentState) => unknown> = {
   developerTeam: (s) => s.gameInfo.developer,
-  answers: (s) => s.answers,
   engine: (s) => s.engineAssessment,
   plan: (s) => planWithoutDerived(s.plan),
   checks: (s) => s.checks,
@@ -84,7 +86,6 @@ export function changedAreas(previous: AssessmentState, next: AssessmentState): 
 
 const LOCKED_MESSAGE: Record<Area, string> = {
   developerTeam: "The developer / team can only be changed while discovery is in progress.",
-  answers: "Discovery answers can only be changed while discovery is in progress.",
   engine: "The engine comparison can only be changed while findings or the plan are open.",
   plan: "The conversion plan can only be changed while the plan is in progress.",
   checks: "The confirmations can only be changed while the plan is in progress.",

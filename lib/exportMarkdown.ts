@@ -1,5 +1,6 @@
 import { DISCOVERY_QUESTIONS, DISCOVERY_SECTIONS, PROJECT_FILES } from "./discovery";
 import {
+  AnswerMap,
   answerFor,
   BASIS_OPTIONS,
   followUpVisible,
@@ -65,9 +66,9 @@ function questionBlock(q: DiscoveryQuestion, a: QuestionAnswer): string[] {
   return [`### ${q.id} · ${q.prompt}`, ...(q.tags.length ? [`Tags: ${q.tags.join(", ")}`] : []), ...body, ...detailLines(q, a), ...fileBlocks(a), ""];
 }
 
-function openItems(state: AssessmentState): string[] {
+function openItems(answers: AnswerMap): string[] {
   return DISCOVERY_QUESTIONS.flatMap((q) => {
-    const a = answerFor(state.answers, q.id);
+    const a = answerFor(answers, q.id);
     if (isNotSure(q, a)) return [`- ${q.id} · ${q.prompt} (Not sure)`];
     if (!isAnswered(q, a)) return [`- ${q.id} · ${q.prompt} (not answered)`];
     return [];
@@ -75,14 +76,14 @@ function openItems(state: AssessmentState): string[] {
 }
 
 /** The whole discovery record as Markdown, in question order, ending with open items. */
-export function buildDiscoveryMarkdown(state: AssessmentState, exportedAt = new Date()): string {
+export function buildDiscoveryMarkdown(state: AssessmentState, answers: AnswerMap, exportedAt = new Date()): string {
   const g = state.gameInfo;
   const sections = DISCOVERY_SECTIONS.flatMap((section) => [
     `## ${section.id} — ${section.title}`,
     "",
-    ...DISCOVERY_QUESTIONS.filter((q) => q.section === section.id).flatMap((q) => questionBlock(q, answerFor(state.answers, q.id))),
+    ...DISCOVERY_QUESTIONS.filter((q) => q.section === section.id).flatMap((q) => questionBlock(q, answerFor(answers, q.id))),
   ]);
-  const open = openItems(state);
+  const open = openItems(answers);
   return [
     `# Prime discovery — ${g.gameName || "Untitled game"}`,
     `_Exported ${exportedAt.toISOString().slice(0, 10)}_`,

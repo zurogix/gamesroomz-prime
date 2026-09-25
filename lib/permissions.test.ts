@@ -7,7 +7,7 @@ import { AssessmentState, AssessmentStatus } from "./types";
 import { CONFLICT_MESSAGE, isVersionConflict } from "./versioning";
 
 const at = (status: AssessmentStatus): AssessmentState => ({ ...initialAssessment(), status });
-const withAnswer = (s: AssessmentState): AssessmentState => ({ ...s, answers: { ...s.answers, A1: { ...initialAnswer(), text: "2021.3" } } });
+const withTeam = (s: AssessmentState): AssessmentState => ({ ...s, gameInfo: { ...s.gameInfo, developer: "Porting team" } });
 const withPlanEdit = (s: AssessmentState): AssessmentState => ({ ...s, plan: s.plan.map((w, i) => (i === 0 ? { ...w, whyChange: "Old Unity" } : w)) });
 const withEngineDays = (s: AssessmentState): AssessmentState => {
   const engineAssessment = { ...s.engineAssessment, recommendedPath: "shared" as const, sharedCore: { ...s.engineAssessment.sharedCore, coreOrBuildDays: 12 } };
@@ -15,14 +15,10 @@ const withEngineDays = (s: AssessmentState): AssessmentState => {
 };
 const allChecked = (s: AssessmentState): AssessmentState => ({ ...s, checks: s.checks.map(() => true) });
 
-function initialAnswer() {
-  return { choice: { selected: [], other: "" }, rows: {}, text: "", notSureYet: false, needsChecking: "", followUps: {}, evidence: "", basis: "" as const, confirmBy: "", files: {} };
-}
 
 describe("allowedTransitions", () => {
   const expected: Record<AssessmentStatus, { developer: AssessmentStatus[]; product: AssessmentStatus[] }> = {
-    discovery: { developer: ["discovery-submitted"], product: [] },
-    "discovery-submitted": { developer: [], product: ["findings", "discovery"] },
+    discovery: { developer: [], product: ["findings"] },
     findings: { developer: [], product: ["plan"] },
     plan: { developer: ["plan-submitted"], product: [] },
     "plan-submitted": { developer: [], product: ["agreed", "plan"] },
@@ -37,8 +33,7 @@ describe("allowedTransitions", () => {
 
 describe("editableAreas", () => {
   const developer: Record<AssessmentStatus, string[]> = {
-    discovery: ["answers", "developerTeam"],
-    "discovery-submitted": [],
+    discovery: ["developerTeam"],
     findings: ["engine"],
     plan: ["engine", "plan", "checks"],
     "plan-submitted": [],
@@ -47,15 +42,14 @@ describe("editableAreas", () => {
 
   it.each(STATUSES.map((s) => s.value))("in %s", (status) => {
     expect([...editableAreas("developer", status)].sort()).toEqual([...developer[status]].sort());
-    expect([...editableAreas("product", status)].sort()).toEqual(["answers", "checks", "developerTeam", "engine", "plan"]);
+    expect([...editableAreas("product", status)].sort()).toEqual(["checks", "developerTeam", "engine", "plan"]);
   });
 });
 
 describe("assessmentChangeError", () => {
-  it("rejects a developer editing discovery answers after submission", () => {
-    const previous = at("discovery-submitted");
-
-    expect(assessmentChangeError("developer", previous, withAnswer(previous))).toBe("Discovery answers can only be changed while discovery is in progress.");
+  it("lets a developer change the developer / team only during discovery", () => {
+    expect(assessmentChangeError("developer", at("discovery"), withTeam(at("discovery")))).toBeNull();
+    expect(assessmentChangeError("developer", at("findings"), withTeam(at("findings")))).toMatch(/developer \/ team/);
   });
 
   it("rejects a developer editing the plan before it is open", () => {
@@ -72,16 +66,14 @@ describe("assessmentChangeError", () => {
     expect(assessmentChangeError("developer", at("discovery"), withEngineDays(at("discovery")))).toMatch(/engine comparison/);
   });
 
-  it("lets a developer make a last edit and submit discovery in the same save", () => {
-    const previous = at("discovery");
-
-    expect(assessmentChangeError("developer", previous, { ...withAnswer(previous), status: "discovery-submitted" })).toBeNull();
+  it("leaves discovery submission to each developer's response: no game transition for developers", () => {
+    expect(assessmentChangeError("developer", at("discovery"), at("findings"))).toMatch(/can't move this assessment/);
+    expect(assessmentChangeError("product", at("discovery"), at("findings"))).toBeNull();
   });
 
   it("rejects status changes that are not allowed", () => {
-    expect(assessmentChangeError("developer", at("discovery-submitted"), at("findings"))).toMatch(/can't move this assessment/);
     expect(assessmentChangeError("developer", at("discovery"), at("plan"))).toMatch(/can't move this assessment/);
-    expect(assessmentChangeError("product", at("discovery"), at("discovery-submitted"))).toMatch(/can't move this assessment/);
+    expect(assessmentChangeError("product", at("findings"), at("discovery"))).toMatch(/can't move this assessment/);
     expect(assessmentChangeError("product", at("plan-submitted"), at("agreed"))).toBeNull();
   });
 
@@ -95,7 +87,7 @@ describe("assessmentChangeError", () => {
   it("allows product to change everything", () => {
     const previous = at("agreed");
 
-    expect(assessmentChangeError("product", previous, withPlanEdit(withAnswer(previous)))).toBeNull();
+    expect(assessmentChangeError("product", previous, withPlanEdit(withTeam(previous)))).toBeNull();
   });
 
   it("treats a reordered but equal engine comparison as unchanged", () => {

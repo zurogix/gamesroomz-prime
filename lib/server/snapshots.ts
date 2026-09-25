@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { hydrateAssessment } from "@/lib/assessment";
+import { AnswerMap, hydrateAnswers } from "@/lib/discoveryAnswers";
 import type { AssessmentState, AssessmentStatus } from "@/lib/types";
 import { db } from "./db";
 import { fromDbStatus } from "./statusMap";
@@ -11,6 +12,8 @@ export type SnapshotEntry = {
   createdBy: string;
   note: string | null;
   state: AssessmentState;
+  /** Discovery answers saved inside versions from before answers were kept per developer (else empty). */
+  answers: AnswerMap;
 };
 
 const HISTORY_LIMIT = 50;
@@ -32,5 +35,6 @@ export async function listSnapshots(gameId: string): Promise<SnapshotEntry[] | n
     createdBy: r.createdBy.name,
     note: r.note,
     state: { ...hydrateAssessment(r.state as Prisma.JsonObject), status: fromDbStatus(r.status) },
+    answers: hydrateAnswers((r.state as Prisma.JsonObject).answers),
   }));
 }

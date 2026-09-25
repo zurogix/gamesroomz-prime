@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import CommandPalette, { PaletteTarget } from "@/components/CommandPalette";
+import { useCallback, useState } from "react";
+import CommandPalette from "@/components/CommandPalette";
 import DiscoverySection from "@/components/DiscoverySection";
 import FindingsView from "@/components/FindingsView";
 import OverviewView from "@/components/OverviewView";
@@ -12,14 +12,20 @@ import PageRail from "@/components/PageRail";
 import SummaryView from "@/components/SummaryView";
 import ProgressLine from "@/components/stages/ProgressLine";
 import StageActions from "@/components/stages/StageActions";
+import SubmitDiscoveryButton from "@/components/stages/SubmitDiscoveryButton";
 import { useAssessmentEditor } from "@/hooks/useAssessmentEditor";
-import { useAssessmentSync } from "@/hooks/useAssessmentSync";
+import { DiscoveryData, useDiscovery } from "@/hooks/useDiscovery";
 import { useTheme } from "@/hooks/useTheme";
-import { DISCOVERY_QUESTIONS, sectionTitle } from "@/lib/discovery";
-import { focusQuestion, railKindFor } from "@/lib/rail";
+import { BACKUP_PREFIX, useVersionedAutosave } from "@/hooks/useVersionedAutosave";
+import { useWorkspaceNavigation } from "@/hooks/useWorkspaceNavigation";
+import { apiRequest } from "@/lib/apiClient";
+import { unansweredQuestions } from "@/lib/discoveryAnswers";
+import { railKindFor } from "@/lib/rail";
 import { canEdit, isProduct } from "@/lib/permissions";
+import { discoveryKpi } from "@/lib/responses";
+import { combineSaveStatus } from "@/lib/saveStatus";
 import { ASSESSMENT_SECTIONS, FINDINGS, OVERVIEW, PLAN, SUMMARY } from "@/lib/sections";
-import { currentStage, navigableStages, Stage, stageById, stageForView, viewOpen } from "@/lib/stages";
+import { currentStage, navigableStages, Stage, stageById, viewOpen } from "@/lib/stages";
 import { AssessmentState } from "@/lib/types";
 import { SaveStatusContext } from "@/components/SaveStatusContext";
 import { CurrentUser } from "@/components/UserBadge";
@@ -30,111 +36,67 @@ type Props = {
   gameId: string;
   initialState: AssessmentState;
   initialVersion: number;
+  initialDiscovery: DiscoveryData;
   user: CurrentUser;
   /** Loads the latest saved version after a conflict; resolves to an error message or null. */
   onReload: () => Promise<string | null>;
 };
 
 /** The assessment workspace for one game: edits in memory, saves through the API. */
-export default function PortalWorkspace({ gameId, initialState, initialVersion, user, onReload }: Props) {
-  const {
-    state, updateGameInfo, updateAnswer,
-    updateEngineAssessment, updateEngineOption, updatePlan, setStatus, toggleCheck,
-  } = useAssessmentEditor(initialState);
-  const saveStatus = useAssessmentSync(gameId, state, initialVersion);
-  const { theme, setTheme } = useTheme();
-  const [view, setView] = useState(OVERVIEW);
-  const [focusId, setFocusId] = useState<string | null>(null);
-  const [drawerId, setDrawerId] = useState<string | null>(null);
-  const [paletteOpen, setPaletteOpen] = useState(false);
-  // "Needs an answer" marks appear only after the developer has tried to submit once.
-  const [submitAttempted, setSubmitAttempted] = useState(false);
-  const markSubmitAttempted = useCallback(() => setSubmitAttempted(true), []);
-
+export default function PortalWorkspace({ gameId, initialState, initialVersion, initialDiscovery, user, onReload }: Props) {
+  const { state, updateGameInfo, updateEngineAssessment, updateEngineOption, updatePlan, setStatus, toggleCheck } = useAssessmentEditor(initialState);
+  const sendAssessment = useCallback(
+    (data: AssessmentState, version: number) =>
+      apiRequest<{ version: number }>(`/api/games/${gameId}/assessment`, { method: "PUT", body: JSON.stringify({ state: data, version }) }),
+    [gameId],
+  );
+  const assessmentSave = useVersionedAutosave(`${BACKUP_PREFIX}${gameId}`, state, initialVersion, sendAssessment);
   const { role } = user;
   const { status } = state;
+  const discovery = useDiscovery(gameId, role, status, initialDiscovery);
+  const saveStatus = combineSaveStatus(assessmentSave, discovery.autosave);
+  const { theme, setTheme } = useTheme();
+  // "Needs an answer" marks appear only after the developer has tried to submit once.
+  const [submitAttempted, setSubmitAttempted] = useState(false);
+
   const stages = navigableStages(status);
   const isOpen = useCallback((v: string) => viewOpen(v, status), [status]);
+  const nav = useWorkspaceNavigation(isOpen);
+  const { shownView, viewStage } = nav;
   const openViews = [OVERVIEW, ...ASSESSMENT_SECTIONS, FINDINGS, PLAN, SUMMARY].filter(isOpen);
-  const planOpen = isOpen(PLAN);
-  // A stage that is not open is never shown, even if it was the last view (e.g. after a stage was reopened).
-  const shownView = isOpen(view) ? view : OVERVIEW;
-  const viewStage = stageForView(shownView);
-
-  const navigate = useCallback((next: string) => {
-    if (!isOpen(next)) return;
-    setView(next);
-    setFocusId(null);
-    setDrawerId(null);
-    window.scrollTo({ top: 0 });
-  }, [isOpen]);
-
-  const openStage = useCallback((stage: Stage) => navigate(stage.view), [navigate]);
-
-  const jumpToQuestion = useCallback((id: string) => {
-    const question = DISCOVERY_QUESTIONS.find((q) => q.id === id);
-    if (!question) return;
-    const target = sectionTitle(question.section);
-    setView(target);
-    setFocusId(id);
-    setDrawerId(null);
-    if (target === view) focusQuestion(id);
-  }, [view]);
-
-  const openWorkstream = useCallback((id: string) => {
-    if (!planOpen) return;
-    setView(PLAN);
-    setDrawerId(id);
-  }, [planOpen]);
-
-  const pick = useCallback((target: PaletteTarget) => {
-    setPaletteOpen(false);
-    if (target.view) return navigate(target.view);
-    if (target.questionId) return jumpToQuestion(target.questionId);
-    if (target.workstreamId) openWorkstream(target.workstreamId);
-  }, [navigate, jumpToQuestion, openWorkstream]);
-
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        setPaletteOpen((open) => !open);
-      }
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
-
-  const closeDrawer = useCallback(() => setDrawerId(null), []);
   const showRail = railKindFor(shownView) !== "none";
+  const answers = discovery.shownAnswers;
+  const ownStatus = discovery.own?.status;
 
-  /** Stage actions appear in the header of the stage the assessment is currently in. */
+  /** Game status actions appear in the header of the stage the assessment is currently in. */
   const actionsFor = (stage: Stage) =>
-    currentStage(status).id === stage.id ? (
-      <StageActions
-        state={state}
-        role={role}
-        onStatus={setStatus}
-        onToggleCheck={toggleCheck}
-        onJumpToQuestion={jumpToQuestion}
-        onSubmitBlocked={markSubmitAttempted}
-      />
-    ) : null;
+    currentStage(status).id === stage.id ? <StageActions state={state} role={role} onStatus={setStatus} onToggleCheck={toggleCheck} /> : null;
+
+  const submitAction = discovery.canEditOwn ? (
+    <SubmitDiscoveryButton
+      unanswered={unansweredQuestions(answers)}
+      onSubmit={discovery.submitOwn}
+      onJumpToQuestion={nav.jumpToQuestion}
+      onBlocked={() => setSubmitAttempted(true)}
+    />
+  ) : null;
 
   function renderView() {
     if (ASSESSMENT_SECTIONS.includes(shownView)) {
       return (
         <DiscoverySection
           state={state}
+          answers={answers}
           sectionTitle={shownView}
-          focusId={focusId}
-          onAnswer={updateAnswer}
-          onNavigate={navigate}
-          canEditAnswers={canEdit(role, status, "answers")}
-          showWhatHappensNext={role === "developer" && status === "discovery-submitted"}
-          markUnanswered={submitAttempted && status === "discovery"}
+          focusId={nav.focusId}
+          onAnswer={discovery.updateAnswer}
+          onNavigate={nav.navigate}
+          canEditAnswers={discovery.canEditOwn}
+          showWhatHappensNext={role === "developer" && ownStatus === "submitted" && status === "discovery"}
+          markUnanswered={submitAttempted && discovery.canEditOwn}
           showProductNote={isProduct(role) && status === "discovery"}
           stageActions={actionsFor(stageById("discovery"))}
+          submitAction={submitAction}
         />
       );
     }
@@ -154,8 +116,8 @@ export default function PortalWorkspace({ gameId, initialState, initialVersion, 
       return (
         <PlanView
           state={state}
-          onOpen={setDrawerId}
-          onNavigate={navigate}
+          onOpen={nav.setDrawerId}
+          onNavigate={nav.navigate}
           canEditPlan={canEdit(role, status, "plan")}
           summaryOpen={isOpen(SUMMARY)}
           stageActions={actionsFor(stageById("plan"))}
@@ -166,7 +128,9 @@ export default function PortalWorkspace({ gameId, initialState, initialVersion, 
       return (
         <SummaryView
           state={state}
-          onOpenWorkstream={openWorkstream}
+          onOpenWorkstream={nav.openWorkstream}
+          discoveryKpi={discoveryKpi(role, discovery.own, discovery.responses)}
+          exportAnswers={answers}
           stageActions={actionsFor(stageById("summary"))}
           historySlot={<VersionHistory gameId={gameId} refreshKey={`${status}:${saveStatus.savedAt ?? 0}`} />}
         />
@@ -175,12 +139,14 @@ export default function PortalWorkspace({ gameId, initialState, initialVersion, 
     return (
       <OverviewView
         state={state}
+        answers={answers}
+        ownDiscovery={ownStatus}
         role={role}
         onGameInfo={updateGameInfo}
-        onNavigate={navigate}
-        onOpenStage={openStage}
+        onNavigate={nav.navigate}
+        onOpenStage={nav.openStage}
         canEditTeam={canEdit(role, status, "developerTeam")}
-        canEditAnswers={canEdit(role, status, "answers")}
+        canEditAnswers={discovery.canEditOwn}
       />
     );
   }
@@ -190,33 +156,34 @@ export default function PortalWorkspace({ gameId, initialState, initialVersion, 
       <div className={`shell ${showRail ? "" : "no-rail"}`}>
         <Sidebar
           state={state}
+          answers={answers}
           active={shownView}
           theme={theme}
-          onNavigate={navigate}
-          onOpenPalette={() => setPaletteOpen(true)}
+          onNavigate={nav.navigate}
+          onOpenPalette={() => nav.setPaletteOpen(true)}
           onTheme={setTheme}
           user={user}
           stages={stages}
         />
         <main className="main">
           {saveStatus.state === "conflict" && <ConflictBanner onReload={onReload} />}
-          <ProgressLine stages={stages} status={status} activeStage={viewStage} onOpen={openStage} />
+          <ProgressLine stages={stages} status={status} activeStage={viewStage} onOpen={nav.openStage} />
           {renderView()}
         </main>
-        {showRail && <PageRail view={shownView} state={state} onJumpToQuestion={jumpToQuestion} onOpenWorkstream={openWorkstream} />}
+        {showRail && <PageRail view={shownView} state={state} answers={answers} onJumpToQuestion={nav.jumpToQuestion} onOpenWorkstream={nav.openWorkstream} />}
       </div>
-      {drawerId && planOpen && (
+      {nav.drawerId && nav.planOpen && (
         <PlanDrawer
           plan={state.plan}
           engine={state.engineAssessment}
-          openId={drawerId}
+          openId={nav.drawerId}
           onChange={updatePlan}
-          onSelect={setDrawerId}
-          onClose={closeDrawer}
+          onSelect={nav.setDrawerId}
+          onClose={nav.closeDrawer}
           readOnly={!canEdit(role, status, "plan")}
         />
       )}
-      {paletteOpen && <CommandPalette views={openViews} plan={state.plan} onPick={pick} onClose={() => setPaletteOpen(false)} />}
+      {nav.paletteOpen && <CommandPalette views={openViews} plan={state.plan} onPick={nav.pick} onClose={() => nav.setPaletteOpen(false)} />}
     </SaveStatusContext.Provider>
   );
 }

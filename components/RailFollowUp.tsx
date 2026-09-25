@@ -1,8 +1,7 @@
 import { CSSProperties } from "react";
-import { discoveryAttention } from "@/lib/discoveryAnswers";
-import { AssessmentState } from "@/lib/types";
+import { AnswerMap, discoveryAttention } from "@/lib/discoveryAnswers";
 
-type Props = { answers: AssessmentState["answers"]; onJumpToQuestion: (id: string) => void };
+type Props = { answers: AnswerMap; onJumpToQuestion: (id: string) => void };
 
 const PREVIEW_LENGTH = 64;
 const tone = { "--c": "var(--warn)" } as CSSProperties;

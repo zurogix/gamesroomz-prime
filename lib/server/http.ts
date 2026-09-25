@@ -44,3 +44,8 @@ export async function parseBody<T>(request: Request, schema: z.ZodType<T>): Prom
     return { ok: false, response: jsonError(400, "The request body must be valid JSON.") };
   }
 }
+
+/** Turns a refusal from the pure permission rules into an { error } response. */
+export function refuse(refusal: { status: number; error: string }) {
+  return jsonError(refusal.status, refusal.error);
+}

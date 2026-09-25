@@ -29,7 +29,7 @@ export default function VersionHistory({ gameId, refreshKey }: Props) {
 
   function exportEntry(entry: SnapshotEntry) {
     const name = `${exportBaseName(entry.state.gameInfo.gameName)}-${entry.status}-${entry.createdAt.slice(0, 10)}.md`;
-    if (!downloadText(name, buildDiscoveryMarkdown(entry.state, new Date(entry.createdAt)), "text/markdown")) setError("Download failed.");
+    if (!downloadText(name, buildDiscoveryMarkdown(entry.state, entry.answers, new Date(entry.createdAt)), "text/markdown")) setError("Download failed.");
   }
 
   return (

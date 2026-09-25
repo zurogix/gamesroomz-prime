@@ -2,9 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { applyEngineEstimate } from "@/lib/assessment";
-import { answerFor } from "@/lib/discoveryAnswers";
 import { applyStatusChange } from "@/lib/stageActions";
-import { QuestionAnswer } from "@/lib/discoveryTypes";
 import { AssessmentState, EngineOptionEstimate, GameInfo, MultiplayerEngineAssessment, Workstream } from "@/lib/types";
 
 function withEngine(s: AssessmentState, engineAssessment: MultiplayerEngineAssessment): AssessmentState {
@@ -17,10 +15,6 @@ export function useAssessmentEditor(initial: AssessmentState) {
 
   const updateGameInfo = useCallback((key: keyof GameInfo, value: string) => {
     setState((s) => ({ ...s, gameInfo: { ...s.gameInfo, [key]: value } }));
-  }, []);
-
-  const updateAnswer = useCallback((id: string, update: (answer: QuestionAnswer) => QuestionAnswer) => {
-    setState((s) => ({ ...s, answers: { ...s.answers, [id]: update(answerFor(s.answers, id)) } }));
   }, []);
 
   const updateEngineAssessment = useCallback((patch: Partial<MultiplayerEngineAssessment>) => {
@@ -46,7 +40,6 @@ export function useAssessmentEditor(initial: AssessmentState) {
   return {
     state,
     updateGameInfo,
-    updateAnswer,
     updateEngineAssessment,
     updateEngineOption,
     updatePlan,

@@ -21,11 +21,17 @@ enum Role {
 
 enum AssessmentStatus {
   discovery
-  discovery_submitted @map("discovery-submitted")
   findings
   plan
-  plan_submitted      @map("plan-submitted")
+  plan_submitted @map("plan-submitted")
   agreed
+
+  @@schema("prime")
+}
+
+enum DiscoveryStatus {
+  in_progress @map("in-progress")
+  submitted
 
   @@schema("prime")
 }
@@ -45,6 +51,7 @@ model Profile {
   gamesCreated       Game[]               @relation("GameCreatedBy")
   assessmentsUpdated Assessment[]         @relation("AssessmentUpdatedBy")
   snapshotsCreated   AssessmentSnapshot[] @relation("SnapshotCreatedBy")
+  discoveryResponses DiscoveryResponse[]
 
   @@schema("prime")
 }
@@ -57,8 +64,9 @@ model Game {
   updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
 
-  createdBy  Profile     @relation("GameCreatedBy", fields: [createdById], references: [id])
-  assessment Assessment?
+  createdBy          Profile             @relation("GameCreatedBy", fields: [createdById], references: [id])
+  assessment         Assessment?
+  discoveryResponses DiscoveryResponse[]
 
   @@index([deletedAt])
   @@schema("prime")
@@ -98,5 +106,28 @@ model AssessmentSnapshot {
   createdBy  Profile    @relation("SnapshotCreatedBy", fields: [createdById], references: [id])
 
   @@index([assessmentId, createdAt])
+  @@schema("prime")
+}
+
+/// One developer's discovery answers for one game. At most one active row (deletedAt IS NULL) per
+/// game and developer: enforced by a partial unique index created in the migration SQL, which the
+/// Prisma schema cannot express. Removing a response is a soft delete; the developer then starts afresh.
+model DiscoveryResponse {
+  id          String          @id @default(uuid()) @db.Uuid
+  gameId      String          @db.Uuid
+  profileId   String          @db.Uuid
+  answers     Json
+  status      DiscoveryStatus @default(in_progress)
+  /// Optimistic locking for answer saves.
+  version     Int             @default(1)
+  submittedAt DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  deletedAt   DateTime?
+
+  game    Game    @relation(fields: [gameId], references: [id])
+  profile Profile @relation(fields: [profileId], references: [id])
+
+  @@index([gameId, profileId])
   @@schema("prime")
 }

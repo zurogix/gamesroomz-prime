@@ -1,12 +1,11 @@
-import type { QuestionAnswer } from "./discoveryTypes";
-
 export type Classification = "reuse" | "extend" | "refactor" | "rewrite" | "new" | "remove" | "";
 export type Risk = "low" | "medium" | "high";
 export type ScopeType = "mandatory" | "enhancement";
 export type Category = "game" | "platform";
 export type RecommendedPath = "shared" | "separate" | "";
 export type SharedCodeLevel = "high" | "medium" | "low" | "";
-export type AssessmentStatus = "discovery" | "discovery-submitted" | "findings" | "plan" | "plan-submitted" | "agreed";
+/** Game-level status. Discovery submission is per developer (see DiscoveryResponse), not a game status. */
+export type AssessmentStatus = "discovery" | "findings" | "plan" | "plan-submitted" | "agreed";
 
 export type EngineOptionEstimate = {
   coreOrBuildDays: number;
@@ -58,7 +57,6 @@ export type GameInfo = {
 
 export type AssessmentState = {
   gameInfo: GameInfo;
-  answers: Record<string, QuestionAnswer>;
   engineAssessment: MultiplayerEngineAssessment;
   plan: Workstream[];
   status: AssessmentStatus;
@@ -67,9 +65,8 @@ export type AssessmentState = {
 };
 
 /** A draft as read from storage: any part may be missing or out of date. */
-export type SavedDraft = Omit<Partial<AssessmentState>, "gameInfo" | "engineAssessment" | "answers" | "status"> & {
+export type SavedDraft = Omit<Partial<AssessmentState>, "gameInfo" | "engineAssessment" | "status"> & {
   gameInfo?: Partial<GameInfo>;
   engineAssessment?: Partial<MultiplayerEngineAssessment>;
-  answers?: Record<string, Partial<QuestionAnswer>>;
   status?: string;
 };

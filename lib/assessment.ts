@@ -1,18 +1,19 @@
-import { AssessmentState, SavedDraft, Workstream } from "./types";
+import { AssessmentState, Classification, SavedDraft, Workstream } from "./types";
 import { planTemplate } from "./planTemplate";
 import { CLASSES, CONFIRMATIONS, ImpactClass } from "./sections";
 import { DEFAULT_STATUS, hydrateStatus } from "./stages";
 import { applyEngineEstimate, emptyEngineAssessment } from "./engine";
-import { DISCOVERY_QUESTIONS } from "./discovery";
-import { hydrateAnswer } from "./discoveryAnswers";
 import { replaceLegacyDefaults } from "./legacyTemplateDefaults";
-import { migrateClassification } from "./migrate";
 
 export { applyEngineEstimate, engineAssessmentIssues, engineOptionTotal, rewriteNeedsEvidence, selectedEngineEstimate } from "./engine";
 
+/** "modify" no longer exists, so those items must be re-classified. */
+export function migrateClassification(value: string | undefined): Classification {
+  return CLASSES.includes(value as ImpactClass) ? (value as Classification) : "";
+}
+
 export const initialAssessment = (): AssessmentState => ({
   gameInfo: { gameName: "Bubble Shooter PvP", developer: "" },
-  answers: {},
   engineAssessment: emptyEngineAssessment(),
   plan: planTemplate.map((item) => ({ ...item })),
   status: DEFAULT_STATUS,
@@ -35,13 +36,10 @@ function hydrateWorkstream(template: Workstream, saved: Partial<Workstream> | un
   return replaceLegacyDefaults(merged, template);
 }
 
-function hydrateAnswers(saved: SavedDraft["answers"]): AssessmentState["answers"] {
-  if (!saved) return {};
-  const known = DISCOVERY_QUESTIONS.filter((q) => saved[q.id]);
-  return Object.fromEntries(known.map((q) => [q.id, hydrateAnswer(saved[q.id])]));
-}
-
-/** Fill in anything missing from a saved v2 draft and drop fields that no longer exist (e.g. primeTargets). */
+/**
+ * Fill in anything missing from a saved state and drop fields that no longer exist (e.g. primeTargets,
+ * and discovery answers, which are now kept per developer in DiscoveryResponse).
+ */
 export function hydrateAssessment(saved: SavedDraft): AssessmentState {
   const base = initialAssessment();
   const savedPlanById = new Map((saved.plan ?? []).map((item) => [item.id, item]));
@@ -60,7 +58,6 @@ export function hydrateAssessment(saved: SavedDraft): AssessmentState {
       gameName: saved.gameInfo?.gameName ?? base.gameInfo.gameName,
       developer: saved.gameInfo?.developer ?? base.gameInfo.developer,
     },
-    answers: hydrateAnswers(saved.answers),
     status: hydrateStatus(saved.status),
     lastSavedAt: saved.lastSavedAt,
     engineAssessment,
