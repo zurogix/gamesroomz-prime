@@ -93,6 +93,16 @@ export function sectionProgress(answers: AnswerMap, sectionId: string) {
   return { done, total: qs.length };
 }
 
+/** Questions without an answer under isAnswered() — "Not sure" counts as an answer. */
+export function unansweredQuestions(answers: AnswerMap): DiscoveryQuestion[] {
+  return DISCOVERY_QUESTIONS.filter((q) => !isAnswered(q, answerFor(answers, q.id)));
+}
+
+/** Discovery can be submitted only when every question has an answer (evidence, follow-ups and basis stay optional). */
+export function canSubmitDiscovery(answers: AnswerMap) {
+  return unansweredQuestions(answers).length === 0;
+}
+
 export function discoveryCoverage(answers: AnswerMap) {
   const done = DISCOVERY_QUESTIONS.filter((q) => isAnswered(q, answerFor(answers, q.id))).length;
   return Math.round((done / DISCOVERY_QUESTIONS.length) * 100);

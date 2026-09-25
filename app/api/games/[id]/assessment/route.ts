@@ -33,6 +33,7 @@ export async function PUT(request: Request, { params }: Context) {
     if (outcome.kind === "not-found") return jsonError(404, "Game not found.");
     if (outcome.kind === "conflict") return jsonError(409, CONFLICT_MESSAGE);
     if (outcome.kind === "forbidden") return jsonError(403, outcome.message);
+    if (outcome.kind === "invalid") return jsonError(400, outcome.message);
     return NextResponse.json({ version: outcome.version, updatedAt: outcome.updatedAt });
   });
 }

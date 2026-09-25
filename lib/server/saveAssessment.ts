@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { hydrateAssessment } from "@/lib/assessment";
 import { assessmentChangeError } from "@/lib/permissions";
-import { withTransitionEffects } from "@/lib/stageActions";
+import { transitionRequirementError, withTransitionEffects } from "@/lib/stageActions";
 import type { AssessmentState } from "@/lib/types";
 import { isVersionConflict } from "@/lib/versioning";
 import type { SessionProfile } from "./auth";
@@ -12,6 +12,7 @@ export type SaveOutcome =
   | { kind: "saved"; version: number; updatedAt: string }
   | { kind: "conflict" }
   | { kind: "forbidden"; message: string }
+  | { kind: "invalid"; message: string }
   | { kind: "not-found" };
 
 /**
@@ -32,6 +33,8 @@ export async function saveAssessment(profile: SessionProfile, gameId: string, st
   const previous = { ...hydrateAssessment(row.state as Prisma.JsonObject), status: fromDbStatus(row.status) };
   const forbidden = assessmentChangeError(profile.role, previous, state);
   if (forbidden) return { kind: "forbidden", message: forbidden };
+  const invalid = transitionRequirementError(previous.status, state);
+  if (invalid) return { kind: "invalid", message: invalid };
 
   // Transition side effects (e.g. clearing confirmations on "Request changes") are applied here too,
   // so they hold whichever client made the change.

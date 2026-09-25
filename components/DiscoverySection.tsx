@@ -2,10 +2,10 @@
 
 import { ReactNode, useEffect } from "react";
 import { DISCOVERY_INTRO, DISCOVERY_QUESTIONS, DISCOVERY_SECTIONS } from "@/lib/discovery";
-import { answerFor, sectionProgress } from "@/lib/discoveryAnswers";
+import { answerFor, isAnswered, sectionProgress } from "@/lib/discoveryAnswers";
 import { QuestionAnswer } from "@/lib/discoveryTypes";
 import { focusQuestion } from "@/lib/rail";
-import { OVERVIEW } from "@/lib/sections";
+import { PRODUCT_SUBMIT_NOTE, sectionNav } from "@/lib/sectionNav";
 import { AssessmentState } from "@/lib/types";
 import DiscoveryQuestionCard from "./DiscoveryQuestionCard";
 import ExportMenu from "./ExportMenu";
@@ -22,15 +22,18 @@ type Props = {
   /** False once discovery is submitted (developers) — answers are then read-only. */
   canEditAnswers: boolean;
   showWhatHappensNext: boolean;
+  /** After a blocked submit, unanswered questions are marked "Needs an answer". */
+  markUnanswered: boolean;
+  /** Product sees a note on the last section where the developer's submit button is. */
+  showProductNote: boolean;
   stageActions?: ReactNode;
 };
 
-export default function DiscoverySection({ state, sectionTitle, focusId, onAnswer, onNavigate, canEditAnswers, showWhatHappensNext, stageActions }: Props) {
+export default function DiscoverySection({ state, sectionTitle, focusId, onAnswer, onNavigate, canEditAnswers, showWhatHappensNext, markUnanswered, showProductNote, stageActions }: Props) {
   const index = DISCOVERY_SECTIONS.findIndex((s) => s.title === sectionTitle);
   const section = DISCOVERY_SECTIONS[index];
   const questions = DISCOVERY_QUESTIONS.filter((q) => q.section === section.id);
-  const prev = index === 0 ? OVERVIEW : DISCOVERY_SECTIONS[index - 1].title;
-  const next = index === DISCOVERY_SECTIONS.length - 1 ? null : DISCOVERY_SECTIONS[index + 1].title;
+  const { prev, next } = sectionNav(index);
   const { done, total } = sectionProgress(state.answers, section.id);
 
   useEffect(() => {
@@ -48,20 +51,25 @@ export default function DiscoverySection({ state, sectionTitle, focusId, onAnswe
         {index === 0 && <p className="discovery-intro">{DISCOVERY_INTRO}</p>}
         <SectionTipsBox section={section} />
         <fieldset className="bare-fieldset dq-list" disabled={!canEditAnswers}>
-          {questions.map((q) => (
-            <DiscoveryQuestionCard
-              key={q.id}
-              question={q}
-              answer={answerFor(state.answers, q.id)}
-              onChange={(update) => onAnswer(q.id, update)}
-            />
-          ))}
+          {questions.map((q) => {
+            const answer = answerFor(state.answers, q.id);
+            return (
+              <DiscoveryQuestionCard
+                key={q.id}
+                question={q}
+                answer={answer}
+                needsAnswer={markUnanswered && !isAnswered(q, answer)}
+                onChange={(update) => onAnswer(q.id, update)}
+              />
+            );
+          })}
         </fieldset>
         <div className="pager">
           <span className="hint">{canEditAnswers ? "Answers save automatically." : "Answers are read-only at this stage."}</span>
           <div className="pager-actions">
-            <button type="button" className="btn" onClick={() => onNavigate(prev)}>← {prev}</button>
-            {next ? <button type="button" className="btn primary" onClick={() => onNavigate(next)}>{next} →</button> : stageActions}
+            <button type="button" className="btn" onClick={() => onNavigate(prev.view)}>{prev.label}</button>
+            {next && <button type="button" className="btn primary" onClick={() => onNavigate(next.view)}>{next.label}</button>}
+            {!next && (showProductNote ? <span className="hint pager-note">{PRODUCT_SUBMIT_NOTE}</span> : stageActions)}
           </div>
         </div>
       </div>

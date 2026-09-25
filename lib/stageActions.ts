@@ -1,3 +1,4 @@
+import { canSubmitDiscovery } from "./discoveryAnswers";
 import { allowedTransitions, Role } from "./permissions";
 import type { AssessmentState, AssessmentStatus } from "./types";
 
@@ -16,7 +17,7 @@ const COPY: Record<string, Copy> = {
   "discovery>discovery-submitted": {
     label: "Submit discovery",
     title: "Submit discovery?",
-    text: "The product team will review your answers. Your answers become read-only while they are reviewed.",
+    text: "Your answers become read-only while the product team reviews them.",
     primary: true,
   },
   "discovery-submitted>findings": {
@@ -68,7 +69,18 @@ export function stageActionsFor(role: Role, status: AssessmentStatus): StageActi
   return allowedTransitions(role, status).map((to) => ({ to, ...COPY[`${status}>${to}`] }));
 }
 
-export const UNANSWERED_NOTE = "Unanswered questions will be listed as open items for discussion.";
+export const UNANSWERED_TITLE = "A few questions still need an answer";
+export const NOT_SURE_NOTE = "'Not sure' is a valid answer — it will be discussed as an open item.";
+export const UNANSWERED_ERROR = "Some questions still need an answer.";
+
+/**
+ * What a status change needs from the content, beyond permissions (checked on the server too).
+ * Submitting discovery needs every question answered, "Not sure" included.
+ */
+export function transitionRequirementError(from: AssessmentStatus, next: AssessmentState): string | null {
+  if (from === "discovery" && next.status === "discovery-submitted" && !canSubmitDiscovery(next.answers)) return UNANSWERED_ERROR;
+  return null;
+}
 
 /** Sending the plan back to the developer clears their confirmations so they confirm again before resubmitting. */
 const CLEARS_CHECKS = new Set(["plan-submitted>plan", "agreed>plan"]);

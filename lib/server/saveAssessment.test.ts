@@ -92,4 +92,13 @@ describe("saveAssessment", () => {
 
     expect(outcome.kind).toBe("saved");
   });
+
+  it("rejects submitting discovery while questions are unanswered (400, nothing saved)", async () => {
+    findFirst.mockResolvedValue(storedRow(DbStatus.discovery));
+
+    const outcome = await saveAssessment(developer, "g-1", { ...withAnswer(initialAssessment()), status: "discovery-submitted" }, 3);
+
+    expect(outcome).toEqual({ kind: "invalid", message: "Some questions still need an answer." });
+    expect(transaction).not.toHaveBeenCalled();
+  });
 });

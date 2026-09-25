@@ -86,7 +86,8 @@ A draft saved in the browser by the earlier, local-only version can be imported 
 Four stages, shown as a progress line at the top of each game ("Step 1: Discovery"):
 
 1. **Discovery (A–I)** — the product team creates the developer's account; the developer answers the discovery form and
-   submits it (Discovery in progress → Discovery submitted — under review). Product then publishes findings or
+   submits it (Discovery in progress → Discovery submitted — under review). Every question needs an answer first —
+   "Not sure" counts — and the save API refuses the submission otherwise. Product then publishes findings or
    reopens discovery for follow-up questions.
 2. **Findings & options** — product publishes findings; the developer responds, including the Multiplayer Engine 2.0
    comparison. Product then opens the plan (Findings & options — open for comments → Conversion plan in progress).

@@ -47,6 +47,9 @@ export default function PortalWorkspace({ gameId, initialState, initialVersion, 
   const [focusId, setFocusId] = useState<string | null>(null);
   const [drawerId, setDrawerId] = useState<string | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  // "Needs an answer" marks appear only after the developer has tried to submit once.
+  const [submitAttempted, setSubmitAttempted] = useState(false);
+  const markSubmitAttempted = useCallback(() => setSubmitAttempted(true), []);
 
   const { role } = user;
   const { status } = state;
@@ -107,7 +110,16 @@ export default function PortalWorkspace({ gameId, initialState, initialVersion, 
 
   /** Stage actions appear in the header of the stage the assessment is currently in. */
   const actionsFor = (stage: Stage) =>
-    currentStage(status).id === stage.id ? <StageActions state={state} role={role} onStatus={setStatus} onToggleCheck={toggleCheck} /> : null;
+    currentStage(status).id === stage.id ? (
+      <StageActions
+        state={state}
+        role={role}
+        onStatus={setStatus}
+        onToggleCheck={toggleCheck}
+        onJumpToQuestion={jumpToQuestion}
+        onSubmitBlocked={markSubmitAttempted}
+      />
+    ) : null;
 
   function renderView() {
     if (ASSESSMENT_SECTIONS.includes(shownView)) {
@@ -120,6 +132,8 @@ export default function PortalWorkspace({ gameId, initialState, initialVersion, 
           onNavigate={navigate}
           canEditAnswers={canEdit(role, status, "answers")}
           showWhatHappensNext={role === "developer" && status === "discovery-submitted"}
+          markUnanswered={submitAttempted && status === "discovery"}
+          showProductNote={isProduct(role) && status === "discovery"}
           stageActions={actionsFor(stageById("discovery"))}
         />
       );

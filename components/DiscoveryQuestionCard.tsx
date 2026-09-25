@@ -12,23 +12,28 @@ import TagChips from "./TagChips";
 type Props = {
   question: DiscoveryQuestion;
   answer: QuestionAnswer;
+  /** Shown only after a submit attempt found this question unanswered. */
+  needsAnswer?: boolean;
   onChange: (update: (answer: QuestionAnswer) => QuestionAnswer) => void;
 };
 
-export default function DiscoveryQuestionCard({ question: q, answer, onChange }: Props) {
+export default function DiscoveryQuestionCard({ question: q, answer, needsAnswer = false, onChange }: Props) {
   const titleId = `q-${q.id}`;
   const patch = (p: Partial<QuestionAnswer>) => onChange((a) => ({ ...a, ...p }));
   const answered = isAnswered(q, answer);
 
   return (
-    <article className={`dq ${answered ? "answered" : ""}`} id={questionElementId(q.id)} tabIndex={-1} aria-labelledby={titleId}>
+    <article className={`dq ${answered ? "answered" : ""} ${needsAnswer ? "needs-answer" : ""}`} id={questionElementId(q.id)} tabIndex={-1} aria-labelledby={titleId}>
       <header className="dq-head">
         <span className="dq-id">{q.id}</span>
         <div>
           <p className="dq-prompt" id={titleId}>{q.prompt}</p>
           {q.helper && <small className="dq-helper">{q.helper}</small>}
         </div>
-        <TagChips tags={q.tags} />
+        <div className="dq-tags">
+          {needsAnswer && <span className="tag tag-missing">Needs an answer</span>}
+          <TagChips tags={q.tags} />
+        </div>
       </header>
 
       <div className="dq-body">
